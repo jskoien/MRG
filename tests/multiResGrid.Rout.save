@@ -1,0 +1,392 @@
+
+R version 4.3.1 (2023-06-16 ucrt) -- "Beagle Scouts"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(MRG)
+> library(sf)
+Linking to GEOS 3.11.2, GDAL 3.6.2, PROJ 9.2.0; sf_use_s2() is TRUE
+> library(giscoR)
+Warning message:
+package 'giscoR' was built under R version 4.3.3 
+> #'
+> # These are SYNTHETIC agricultural FSS data 
+> data(ifs_dk) # Census data
+> ifs_weight = ifs_dk %>% dplyr::filter(Sample == 1) # Extract weighted subsample
+> 
+> # Create spatial data
+> ifg = fssgeo(ifs_dk, locAdj = "LL")
+> fsg = fssgeo(ifs_weight, locAdj = "LL")
+> # Read country borders, only used for plotting
+> borders = gisco_get_nuts(nuts_level = 0)
+> dkb = borders[borders$CNTR_CODE == "DK",] %>% st_transform(crs = 3035)
+> #'
+> # Set the base resolutions, and create a hierarchical list with gridded data
+> ress = c(1,5,10,20,40, 80, 160)*1000
+> # Gridding Utilized agricultural area (UAA)
+> ifl = gridData(ifg, "UAA",res = ress)
+> 
+> # Gridding UAA and organic UAA together
+> ifl3 = gridData(ifg, vars = c("UAA", "UAAXK0000_ORG"), res = ress)
+> 
+> # Gridding the UAA from the survey - the survey weights are in the column EXT_MODULE
+> fsl = gridData(fsg,  vars = c("UAA"), weights = "EXT_MODULE",  res = ress)
+> 
+> # Create a multi-resolution grid only with farm number as confidentiality rule, then plot results
+> himg0 = multiResGrid(ifl, checkReliability = FALSE, suppresslim = 0)
+[1] "ires 2 5000 #himg-cells: 2179 ; removed: 23704 ; added: 2107 ; confidential: 72"
+[1] "ires 3 10000 #himg-cells: 1642 ; removed: 768 ; added: 231 ; confidential: 41"
+[1] "ires 4 20000 #himg-cells: 1539 ; removed: 137 ; added: 34 ; confidential: 9"
+[1] "ires 5 40000 #himg-cells: 1451 ; removed: 96 ; added: 8 ; confidential: 1"
+[1] "ires 6 80000 #himg-cells: 1366 ; removed: 86 ; added: 1 ; confidential: 0"
+[1] "ires 7 160000 #himg-cells: 1366 ; removed: 0 ; added: 0 ; confidential: 0"
+[1] "ires 8 NA #himg-cells: 1366 ; removed: 0 ; added: 0 ; confidential: 0"
+> 
+> # Create a multi-resolution grid of UAA, also based on the dominance rule (default)
+> himg1 = multiResGrid(ifl, vars = "UAA", ifg = ifg)
+[1] "ires 2 5000 #himg-cells: 2179 ; removed: 23704 ; added: 2107 ; confidential: 72"
+[1] "ires 3 10000 #himg-cells: 1601 ; removed: 824 ; added: 246 ; confidential: 42"
+[1] "ires 4 20000 #himg-cells: 1493 ; removed: 145 ; added: 37 ; confidential: 9"
+[1] "ires 5 40000 #himg-cells: 1405 ; removed: 96 ; added: 8 ; confidential: 1"
+[1] "ires 6 80000 #himg-cells: 1333 ; removed: 73 ; added: 1 ; confidential: 0"
+[1] "ires 7 160000 #himg-cells: 1333 ; removed: 0 ; added: 0 ; confidential: 0"
+[1] "ires 8 NA #himg-cells: 1333 ; removed: 0 ; added: 0 ; confidential: 0"
+> 
+> 
+> # Create joint multi-resolution grid of organic UAA and total UAA
+> himg3 = multiResGrid(ifl3, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
++                   checkReliability = FALSE, suppresslim = 0)
+[1] "ires 2 5000 #himg-cells: 2179 ; removed: 23704 ; added: 2107 ; confidential: 72"
+[1] "ires 3 10000 #himg-cells: 636 ; removed: 2126 ; added: 583 ; confidential: 48"
+[1] "ires 4 20000 #himg-cells: 192 ; removed: 613 ; added: 169 ; confidential: 17"
+[1] "ires 5 40000 #himg-cells: 121 ; removed: 103 ; added: 32 ; confidential: 5"
+[1] "ires 6 80000 #himg-cells: 103 ; removed: 25 ; added: 7 ; confidential: 3"
+[1] "ires 7 160000 #himg-cells: 94 ; removed: 11 ; added: 2 ; confidential: 2"
+[1] "ires 8 NA #himg-cells: 94 ; removed: 0 ; added: 0 ; confidential: 2"
+> 
+> 
+> # Create joint multi-resolution grid of organic UAA and total UAA
+> himg4 = multiResGrid(ifl3, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
++                      checkReliability = FALSE, suppresslim = 0.1)
+[1] "ires 2 5000 #himg-cells: 2179 ; removed: 23704 ; added: 2107 ; confidential: 72"
+[1] "ires 3 10000 #himg-cells: 636 ; removed: 2126 ; added: 583 ; confidential: 48"
+[1] "ires 4 20000 #himg-cells: 196 ; removed: 607 ; added: 167 ; confidential: 19"
+[1] "ires 5 40000 #himg-cells: 132 ; removed: 92 ; added: 28 ; confidential: 11"
+[1] "ires 6 80000 #himg-cells: 119 ; removed: 19 ; added: 6 ; confidential: 8"
+[1] "ires 7 160000 #himg-cells: 108 ; removed: 13 ; added: 2 ; confidential: 6"
+[1] "ires 8 NA #himg-cells: 108 ; removed: 0 ; added: 0 ; confidential: 6"
+> 
+> # Create multi-resolution grid of UAA and organic UAA, based on survey data,
+> # also applying reliability check
+> # Slow!
+> himg5 = multiResGrid(fsl, vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
++                       strat = "STRA_ID_CORE", checkReliability = TRUE)
+Joining with `by = join_by(himgid)`
+[1] "df 1194 1060"
+[1] "df 1194 1060"
+[1] "df 1212 1060"
+[1] "df 1374 1060"
+[1] "df 1335 1060"
+[1] "df 1213 1060"
+[1] "df 1263 1060"
+[1] "df 1215 1061"
+[1] "ires 2 5000 #himg-cells: 2033 ; removed: 8187 ; added: 1739 ; confidential: 287"
+Joining with `by = join_by(himgid)`
+[1] "df 289 254"
+[1] "df 1165 254"
+[1] "df 1303 254"
+[1] "df 1187 254"
+[1] "df 2007 254"
+[1] "df 1392 254"
+[1] "df 1430 254"
+[1] "df 1227 255"
+[1] "ires 3 10000 #himg-cells: 637 ; removed: 1947 ; added: 551 ; confidential: 50"
+Joining with `by = join_by(himgid)`
+[1] "df 707 80"
+[1] "df 1352 79"
+[1] "df 1300 80"
+[1] "df 1285 79"
+[1] "df 1605 80"
+[1] "df 1331 79"
+[1] "df 1319 80"
+[1] "df 1101 80"
+[1] "ires 4 20000 #himg-cells: 320 ; removed: 440 ; added: 123 ; confidential: 13"
+Joining with `by = join_by(himgid)`
+[1] "df 605 40"
+[1] "df 872 40"
+[1] "df 998 40"
+[1] "df 873 40"
+[1] "df 818 40"
+[1] "df 2042 40"
+[1] "df 2058 40"
+[1] "df 1734 40"
+[1] "ires 5 40000 #himg-cells: 274 ; removed: 66 ; added: 20 ; confidential: 1"
+Joining with `by = join_by(himgid)`
+[1] "df 605 35"
+[1] "df 781 34"
+[1] "df 913 34"
+[1] "df 761 34"
+[1] "df 695 34"
+[1] "df 1717 34"
+[1] "df 2286 34"
+[1] "df 2242 35"
+[1] "ires 6 80000 #himg-cells: 272 ; removed: 3 ; added: 1 ; confidential: 1"
+Joining with `by = join_by(himgid)`
+[1] "df 587 34"
+[1] "df 779 34"
+[1] "df 893 34"
+[1] "df 771 34"
+[1] "df 689 34"
+[1] "df 1968 34"
+[1] "df 2046 34"
+[1] "df 2267 34"
+[1] "ires 7 160000 #himg-cells: 257 ; removed: 16 ; added: 1 ; confidential: 0"
+Joining with `by = join_by(himgid)`
+[1] "df 538 32"
+[1] "df 741 32"
+[1] "df 870 32"
+[1] "df 722 32"
+[1] "df 681 32"
+[1] "df 1436 32"
+[1] "df 2170 32"
+[1] "df 2842 33"
+[1] "ires 8 NA #himg-cells: 257 ; removed: 0 ; added: 0 ; confidential: 1"
+There were 50 or more warnings (use warnings() to see the first 50)
+> 
+> summary(himg0)
+     count             countw             UAA               weight1       
+ Min.   :  10.00   Min.   :  10.00   Min.   :    81.83   Min.   :   8.00  
+ 1st Qu.:  16.25   1st Qu.:  16.25   1st Qu.:   779.75   1st Qu.:  16.00  
+ Median :  21.00   Median :  21.00   Median :  1354.46   Median :  20.00  
+ Mean   :  27.15   Mean   :  27.15   Mean   :  1913.46   Mean   :  26.42  
+ 3rd Qu.:  25.00   3rd Qu.:  25.00   3rd Qu.:  2147.33   3rd Qu.:  25.00  
+ Max.   :2078.00   Max.   :2078.00   Max.   :163656.48   Max.   :2008.00  
+      res              ID            freq            dom         
+ Min.   : 5000   Min.   :   1.0   Mode :logical   Mode :logical  
+ 1st Qu.: 5000   1st Qu.: 342.2   FALSE:1366      FALSE:1366     
+ Median : 5000   Median : 683.5                                  
+ Mean   : 6083   Mean   : 683.5                                  
+ 3rd Qu.: 5000   3rd Qu.:1024.8                                  
+ Max.   :80000   Max.   :1366.0                                  
+    ufun                  geometry   
+ Mode :logical   POLYGON      :1366  
+ FALSE:1366      epsg:3035    :   0  
+                 +proj=laea...:   0  
+                                     
+                                     
+                                     
+> summary(himg1)
+     count             countw             UAA            weight1       
+ Min.   :  10.00   Min.   :  10.00   Min.   :    90   Min.   :  10.00  
+ 1st Qu.:  17.00   1st Qu.:  17.00   1st Qu.:   800   1st Qu.:  20.00  
+ Median :  21.00   Median :  21.00   Median :  1390   Median :  20.00  
+ Mean   :  27.82   Mean   :  27.82   Mean   :  1961   Mean   :  27.25  
+ 3rd Qu.:  26.00   3rd Qu.:  26.00   3rd Qu.:  2200   3rd Qu.:  20.00  
+ Max.   :2078.00   Max.   :2078.00   Max.   :163660   Max.   :2010.00  
+      res              ID          freq            dom             ufun        
+ Min.   : 5000   Min.   :   1   Mode :logical   Mode :logical   Mode :logical  
+ 1st Qu.: 5000   1st Qu.: 334   FALSE:1333      FALSE:1333      FALSE:1333     
+ Median : 5000   Median : 667                                                  
+ Mean   : 6159   Mean   : 667                                                  
+ 3rd Qu.: 5000   3rd Qu.:1000                                                  
+ Max.   :80000   Max.   :1333                                                  
+          geometry   
+ POLYGON      :1333  
+ epsg:3035    :   0  
+ +proj=laea...:   0  
+                     
+                     
+                     
+> summary(himg3)
+     count            countw            UAA         UAAXK0000_ORG  
+ Min.   :  77.0   Min.   :  77.0   Min.   :  3480   Min.   :  370  
+ 1st Qu.: 244.8   1st Qu.: 244.8   1st Qu.: 16670   1st Qu.: 1462  
+ Median : 314.0   Median : 314.0   Median : 23240   Median : 2555  
+ Mean   : 401.5   Mean   : 401.5   Mean   : 28309   Mean   : 3152  
+ 3rd Qu.: 376.5   3rd Qu.: 376.5   3rd Qu.: 29070   3rd Qu.: 3650  
+ Max.   :3981.0   Max.   :3981.0   Max.   :230640   Max.   :27170  
+ NA's   :2        NA's   :2        NA's   :2        NA's   :2      
+    weight1          weight2            res               ID       
+ Min.   :  80.0   Min.   : 10.00   Min.   : 10000   Min.   : 1.00  
+ 1st Qu.: 230.0   1st Qu.: 20.00   1st Qu.: 20000   1st Qu.:24.25  
+ Median : 310.0   Median : 30.00   Median : 20000   Median :47.50  
+ Mean   : 390.7   Mean   : 39.24   Mean   : 28511   Mean   :47.50  
+ 3rd Qu.: 370.0   3rd Qu.: 40.00   3rd Qu.: 20000   3rd Qu.:70.75  
+ Max.   :3860.0   Max.   :380.00   Max.   :160000   Max.   :94.00  
+ NA's   :2        NA's   :2                                        
+    freq            dom             ufun                  geometry 
+ Mode :logical   Mode :logical   Mode :logical   POLYGON      :94  
+ FALSE:92        FALSE:93        FALSE:94        epsg:3035    : 0  
+ TRUE :2         TRUE :1                         +proj=laea...: 0  
+                                                                   
+                                                                   
+                                                                   
+                                                                   
+> summary(himg4)
+     count            countw            UAA         UAAXK0000_ORG  
+ Min.   :  77.0   Min.   :  77.0   Min.   :  3480   Min.   :  370  
+ 1st Qu.: 227.5   1st Qu.: 227.5   1st Qu.: 15108   1st Qu.: 1398  
+ Median : 296.0   Median : 296.0   Median : 22190   Median : 2335  
+ Mean   : 361.9   Mean   : 361.9   Mean   : 25513   Mean   : 2843  
+ 3rd Qu.: 359.8   3rd Qu.: 359.8   3rd Qu.: 28173   3rd Qu.: 3500  
+ Max.   :3981.0   Max.   :3981.0   Max.   :230640   Max.   :27170  
+ NA's   :6        NA's   :6        NA's   :6        NA's   :6      
+    weight1          weight2            res               ID        
+ Min.   :  80.0   Min.   : 10.00   Min.   :  5000   Min.   :  1.00  
+ 1st Qu.: 220.0   1st Qu.: 20.00   1st Qu.: 20000   1st Qu.: 27.75  
+ Median : 285.0   Median : 30.00   Median : 20000   Median : 54.50  
+ Mean   : 352.3   Mean   : 35.39   Mean   : 25972   Mean   : 54.50  
+ 3rd Qu.: 350.0   3rd Qu.: 40.00   3rd Qu.: 20000   3rd Qu.: 81.25  
+ Max.   :3860.0   Max.   :380.00   Max.   :160000   Max.   :108.00  
+ NA's   :6        NA's   :6                                         
+    freq            dom             ufun                  geometry  
+ Mode :logical   Mode :logical   Mode :logical   POLYGON      :108  
+ FALSE:102       FALSE:105       FALSE:108       epsg:3035    :  0  
+ TRUE :6         TRUE :3                         +proj=laea...:  0  
+                                                                    
+                                                                    
+                                                                    
+                                                                    
+> summary(himg5)
+     count            countw             UAA            weight1      
+ Min.   :  3.00   Min.   :  10.79   Min.   :   100   Min.   :  10.0  
+ 1st Qu.: 17.00   1st Qu.:  62.56   1st Qu.:  3732   1st Qu.:  60.0  
+ Median : 24.00   Median :  92.13   Median :  6730   Median :  90.0  
+ Mean   : 39.04   Mean   : 144.74   Mean   : 10154   Mean   : 140.9  
+ 3rd Qu.: 49.00   3rd Qu.: 158.13   3rd Qu.: 12832   3rd Qu.: 160.0  
+ Max.   :902.00   Max.   :3879.43   Max.   :215440   Max.   :3730.0  
+ NA's   :1        NA's   :1         NA's   :1        NA's   :1       
+      res               ID         freq            dom             ufun        
+ Min.   :  5000   Min.   :  1   Mode :logical   Mode :logical   Mode :logical  
+ 1st Qu.: 10000   1st Qu.: 65   FALSE:257       FALSE:257       FALSE:257      
+ Median : 10000   Median :129                                                  
+ Mean   : 14844   Mean   :129                                                  
+ 3rd Qu.: 20000   3rd Qu.:193                                                  
+ Max.   :160000   Max.   :257                                                  
+                                                                               
+          geometry  
+ POLYGON      :257  
+ epsg:3035    :  0  
+ +proj=laea...:  0  
+                    
+                    
+                    
+                    
+> 
+> MRGobject = createMRGobject(ifg = ifg, ress = ress, var = "UAA")
+> himg1 = multiResGrid(MRGobject)
+[1] "ires 2 5000 #himg-cells: 2179 ; removed: 23704 ; added: 2107 ; confidential: 72"
+[1] "ires 3 10000 #himg-cells: 1601 ; removed: 824 ; added: 246 ; confidential: 42"
+[1] "ires 4 20000 #himg-cells: 1493 ; removed: 145 ; added: 37 ; confidential: 9"
+[1] "ires 5 40000 #himg-cells: 1405 ; removed: 96 ; added: 8 ; confidential: 1"
+[1] "ires 6 80000 #himg-cells: 1333 ; removed: 73 ; added: 1 ; confidential: 0"
+[1] "ires 7 160000 #himg-cells: 1333 ; removed: 0 ; added: 0 ; confidential: 0"
+[1] "ires 8 NA #himg-cells: 1333 ; removed: 0 ; added: 0 ; confidential: 0"
+> # Parameters can be updated in the object or in the call to multiResGrid
+> MRGobject$suppresslim = 0.02
+> himg2 = multiResGrid(MRGobject)
+[1] "ires 2 5000 #himg-cells: 2179 ; removed: 23704 ; added: 2107 ; confidential: 72"
+[1] "ires 3 10000 #himg-cells: 1657 ; removed: 746 ; added: 224 ; confidential: 67"
+[1] "ires 4 20000 #himg-cells: 1603 ; removed: 77 ; added: 23 ; confidential: 48"
+[1] "ires 5 40000 #himg-cells: 1558 ; removed: 50 ; added: 5 ; confidential: 41"
+[1] "ires 6 80000 #himg-cells: 1558 ; removed: 0 ; added: 0 ; confidential: 41"
+[1] "ires 7 160000 #himg-cells: 1558 ; removed: 0 ; added: 0 ; confidential: 41"
+[1] "ires 8 NA #himg-cells: 1558 ; removed: 0 ; added: 0 ; confidential: 41"
+> himg3 = multiResGrid(MRGobject, suppresslim = 0.05)
+[1] "ires 2 5000 #himg-cells: 2179 ; removed: 23704 ; added: 2107 ; confidential: 72"
+[1] "ires 3 10000 #himg-cells: 1724 ; removed: 651 ; added: 196 ; confidential: 100"
+[1] "ires 4 20000 #himg-cells: 1690 ; removed: 51 ; added: 17 ; confidential: 87"
+[1] "ires 5 40000 #himg-cells: 1675 ; removed: 17 ; added: 2 ; confidential: 82"
+[1] "ires 6 80000 #himg-cells: 1675 ; removed: 0 ; added: 0 ; confidential: 82"
+[1] "ires 7 160000 #himg-cells: 1675 ; removed: 0 ; added: 0 ; confidential: 82"
+[1] "ires 8 NA #himg-cells: 1675 ; removed: 0 ; added: 0 ; confidential: 82"
+> summary(himg1)
+     count             countw             UAA            weight1       
+ Min.   :  10.00   Min.   :  10.00   Min.   :    90   Min.   :  10.00  
+ 1st Qu.:  17.00   1st Qu.:  17.00   1st Qu.:   800   1st Qu.:  20.00  
+ Median :  21.00   Median :  21.00   Median :  1390   Median :  20.00  
+ Mean   :  27.82   Mean   :  27.82   Mean   :  1961   Mean   :  27.25  
+ 3rd Qu.:  26.00   3rd Qu.:  26.00   3rd Qu.:  2200   3rd Qu.:  20.00  
+ Max.   :2078.00   Max.   :2078.00   Max.   :163660   Max.   :2010.00  
+      res              ID          freq            dom             ufun        
+ Min.   : 5000   Min.   :   1   Mode :logical   Mode :logical   Mode :logical  
+ 1st Qu.: 5000   1st Qu.: 334   FALSE:1333      FALSE:1333      FALSE:1333     
+ Median : 5000   Median : 667                                                  
+ Mean   : 6159   Mean   : 667                                                  
+ 3rd Qu.: 5000   3rd Qu.:1000                                                  
+ Max.   :80000   Max.   :1333                                                  
+          geometry   
+ POLYGON      :1333  
+ epsg:3035    :   0  
+ +proj=laea...:   0  
+                     
+                     
+                     
+> summary(himg2)
+     count            countw            UAA           weight1      
+ Min.   : 10.00   Min.   : 10.00   Min.   :   50   Min.   : 10.00  
+ 1st Qu.: 16.00   1st Qu.: 16.00   1st Qu.:  780   1st Qu.: 20.00  
+ Median : 20.00   Median : 20.00   Median : 1350   Median : 20.00  
+ Mean   : 24.36   Mean   : 24.36   Mean   : 1721   Mean   : 23.87  
+ 3rd Qu.: 25.00   3rd Qu.: 25.00   3rd Qu.: 2140   3rd Qu.: 20.00  
+ Max.   :518.00   Max.   :518.00   Max.   :33040   Max.   :510.00  
+ NA's   :41       NA's   :41       NA's   :41      NA's   :41      
+      res              ID            freq            dom         
+ Min.   : 1000   Min.   :   1.0   Mode :logical   Mode :logical  
+ 1st Qu.: 5000   1st Qu.: 390.2   FALSE:1517      FALSE:1535     
+ Median : 5000   Median : 779.5   TRUE :41        TRUE :23       
+ Mean   : 5806   Mean   : 779.5                                  
+ 3rd Qu.: 5000   3rd Qu.:1168.8                                  
+ Max.   :40000   Max.   :1558.0                                  
+                                                                 
+    ufun                  geometry   
+ Mode :logical   POLYGON      :1558  
+ FALSE:1558      epsg:3035    :   0  
+                 +proj=laea...:   0  
+                                     
+                                     
+                                     
+                                     
+> summary(himg3)
+     count            countw            UAA           weight1      
+ Min.   : 10.00   Min.   : 10.00   Min.   :   50   Min.   : 10.00  
+ 1st Qu.: 16.00   1st Qu.: 16.00   1st Qu.:  780   1st Qu.: 20.00  
+ Median : 20.00   Median : 20.00   Median : 1330   Median : 20.00  
+ Mean   : 23.05   Mean   : 23.05   Mean   : 1636   Mean   : 22.61  
+ 3rd Qu.: 25.00   3rd Qu.: 25.00   3rd Qu.: 2100   3rd Qu.: 20.00  
+ Max.   :284.00   Max.   :284.00   Max.   :18860   Max.   :280.00  
+ NA's   :82       NA's   :82       NA's   :82      NA's   :82      
+      res              ID            freq            dom         
+ Min.   : 1000   Min.   :   1.0   Mode :logical   Mode :logical  
+ 1st Qu.: 5000   1st Qu.: 419.5   FALSE:1593      FALSE:1638     
+ Median : 5000   Median : 838.0   TRUE :82        TRUE :37       
+ Mean   : 5614   Mean   : 838.0                                  
+ 3rd Qu.: 5000   3rd Qu.:1256.5                                  
+ Max.   :40000   Max.   :1675.0                                  
+                                                                 
+    ufun                  geometry   
+ Mode :logical   POLYGON      :1675  
+ FALSE:1675      epsg:3035    :   0  
+                 +proj=laea...:   0  
+                                     
+                                     
+                                     
+                                     
+> 
+> 
+> 
+> proc.time()
+   user  system elapsed 
+ 253.78    6.71  261.53 
