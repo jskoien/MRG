@@ -1,6 +1,7 @@
 #' Function that creates a multi-resolution grid with larger grid cells in
-#' regions with lower resolution of farms, or where farms need to
-#' be anonymized for disclosure control reasons
+#' regions with lower resolution of data, or where data needs to
+#' be anonymized for disclosure control reasons. The function can also be used
+#' to create a grid of new variables, following an existing grid.
 #'
 #' Two main confidentiality rules are considered:
 #' - Threshold rule (suppression due to a minimum number of counts)
@@ -8,7 +9,7 @@
 #'
 #' @eval MRGparam("MRGobject")
 #' @eval MRGparam("gdl")
-#' #@eval MRGparam("ress")
+#' @eval MRGparam("himg")
 #' @eval MRGparam("mincount")
 #' @eval MRGparam("nlarge")
 #' @eval MRGparam("plim")
@@ -49,9 +50,21 @@
 #'        otherwise only the 5 km grid cell will be kept. This will again be tested against the confidentiality
 #'        rules in the next iteration, when grid cells will possibly be merged to 10 km grid cells.
 #'
+#'        The function can also be called if it is necessary to create a grid of a new variable for the same
+#'        grid as an already existing variable. The confidentiality rules will then be applied to the new
+#'        variables for the existing grid cells, and mask the ones that do not respect the rules.
+#'        The function will not do any further merging
+#'        of grid cells, for this it is necessary to grid the variables together.
+#'        This feature is useful when the new data set has a similar resolution 
+#'        as the original data set. It will give a high number of missing values if
+#'        the resolution of the new data is more sparse than the original. In the examples below,
+#'        this means that it is possible to copy the grid of organic organic 
+#'        agricultural area to a grid of all agricultural area, whereas the opposite
+#'        will not work well.
+#'
 #'        The standard threshold rule for spatial data is at least 10 units (mincount). 
 #'        The parameters nlarge and plim are used for determining the dominance treatment for the variable of interest,
-#'        with default values of nlarge=2 and plim=0.85. 
+#'        with default values of \code{nlarge = 2} and \code{plim = 0.85}. 
 #'        If more than plim of the values of the grid cell (e.g. UAA, arable land, number of livestock)
 #'        is explained by 1-nlarge weighted holdings, the grid cell will not pass the confidentiality rule.
 #'        
@@ -62,6 +75,7 @@
 #'        possible stratified sampling approaches. The number is zero if all holdings in the population in 
 #'        a grid cell has been sampled, and the default requirement is that the CV is less than 35%.
 #'        
+
 #'        There are some cases where aggregation might not be desired. In the situation where a 
 #'        relatively large single grid cell does not respect the confidentiality rules, it is fine to 
 #'        aggregate it if the neighbouring grid cells are also relatively large. However, it can be seen
@@ -138,8 +152,8 @@
 #' 
 #' # Create a multi-resolution grid of UAA, also based on the dominance rule (default)
 #' himg1 = multiResGrid(ifl, vars = "UAA", ifg = ifg)
-#' ggplot(himg1) + geom_sf(aes(fill = UAA))
-#' 
+#' p1 = ggplot(himg1) + geom_sf(aes(fill = UAA))
+#' p1
 #' # Create multi-resolution grid of organic UAA
 #' himg2 = multiResGrid(ifl2, vars = "UAAXK0000_ORG", ifg = ifg)
 #' himg21 = multiResGrid(ifl2, vars = "UAAXK0000_ORG", ifg = ifg, postProcess = FALSE)
@@ -149,9 +163,16 @@
 #' # Create joint multi-resolution grid of organic UAA and total UAA
 #' himg3 = multiResGrid(ifl3, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
 #'                   checkReliability = FALSE, suppresslim = 0)
-#' p1 = ggplot(himg3) + geom_sf(aes(fill = UAA))
-#' p2 = ggplot(himg3) + geom_sf(aes(fill = UAAXK0000_ORG))
-#' p1 + p2
+#' # Create multi-resolution grid of organic UAA, based on the UAA grid
+#' # The large number of missing values indicates that this feature should
+#' # mainly be used for data that have similar or higher resolution as the
+#' # original data set.
+#' himg33 = multiResGrid(himg1, vars = c("UAAXK0000_ORG"), ifg = ifg, 
+#'                   checkReliability = FALSE, suppresslim = 0)
+#' p31 = ggplot(himg3) + geom_sf(aes(fill = UAA))
+#' p32 = ggplot(himg3) + geom_sf(aes(fill = UAAXK0000_ORG))
+#' p33 = ggplot(himg33) + geom_sf(aes(fill = UAAXK0000_ORG))
+#' p31 + p32 + p33
 #' 
 #' # Create multi-resolution grid of UAA, based on survey data,
 #' # with and without applying reliability check
@@ -303,20 +324,31 @@ multiResGrid.MRG <- function(MRGobject, ...) {
 #'
 #' @rdname multiResGrid
 #' @export
+multiResGrid.data.frame <- function(himg, ...) {
+  dots = list(...)
+  #' @importFrom utils modifyList
+  MRGobject = list(list(gdl = himg))
+  if (length(dots) > 0) MRGobject = modifyList(MRGobject, dots)
+  do.call(multiResGrid, MRGobject)
+}
+#' 
+#' 
+#' 
+#' @rdname multiResGrid
+#' @export
 multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "feature", mincount = 10, #minpos = 4, 
-                       nlarge = 2,
-                          plim = 0.85, verbose = FALSE, nclus = 1, clusType, domEstat = TRUE, 
-                          outfile = NULL, checkDominance = TRUE,
-                          checkReliability = FALSE, userfun, strat = NULL, confrules = "individual", 
-                          suppresslim = 0, sumsmall = FALSE, suppresslimSum = NULL,
-                          reliabilitySplit = TRUE,
-                          plotIntermediate = FALSE,  addIntermediate = FALSE,
-                          postProcess = TRUE, rounding = -1, remCols = TRUE, ...) {
-#  To avoid R CMD check notes
+                              nlarge = 2,
+                              plim = 0.85, verbose = FALSE, nclus = 1, clusType, domEstat = TRUE, 
+                              outfile = NULL, checkDominance = TRUE,
+                              checkReliability = FALSE, userfun, strat = NULL, confrules = "individual", 
+                              suppresslim = 0, sumsmall = FALSE, suppresslimSum = NULL,
+                              reliabilitySplit = TRUE,
+                              plotIntermediate = FALSE,  addIntermediate = FALSE,
+                              postProcess = TRUE, rounding = -1, remCols = TRUE, ...) {
+  #  To avoid R CMD check notes
   hsum = small = weight = data = himgid = dominance = . = NULL
   if (!missing(ifg) && !inherits(ifg, "sf")) stop("ifg is not an sf-object ")
-  ress = unlist(lapply(gdl, FUN = function(gdll) gdll$res[1]))
-  
+  if (length(gdl) > 1) ress = unlist(lapply(gdl, FUN = function(gdll) gdll$res[1])) else ress = 0
   if (checkReliability) {
     if (missing(strat) | is.null(strat) ) {
       if (!"strat" %in% names(ifg)) ifg$strat = 1  
@@ -340,18 +372,50 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
       ifg = ifg[, c("ID", paste0("gridvar", 1:length(vars)), paste0("weight", 1:length(vars)))]
     }
   } 
-  
-  himg = gdl[[1]] %>% mutate(confidential = FALSE, reliability = FALSE, small = FALSE,
-                               freq = FALSE, dom = FALSE, ufun = FALSE)
-  
+  if (length(gdl) == 1) {
+    loh = NULL
+    gdl = gdl[[1]]   
+    if (!"ID" %in% names(gdl)) gdl$ID = 1:dim(gdl)[1]
+    if (!"ID" %in% names(ifg)) ifg$ID = 1:dim(ifg)[1]
+    ifg = ifg %>% mutate(himgid = st_join(., gdl, join = st_within)$ID.y) 
+    himg = gdl[, c("ID", "res")]
+    himg = himg %>% mutate(count = st_drop_geometry(ifg) %>% group_by(himgid) %>% summarize(count = n()) %>% select(count) %>% pull)
+    
+    if (missing(weights) || is.null(weights)) weights = 1
+    if (weights == 1)  himg$countw = himg$count
+    
+    if (!is.null(vars)) {
+      if (length(vars) > 0 & length(weights) == 1) weights = rep(weights, length(vars))
+      for (ivar in 1:length(vars)) {
+        ww = paste0("weight", ivar)
+        vv = paste0("gridvar", ivar)
+        vvv = vars[ivar]
+        if (!is.null(ww) & ww != 1) ifg$wsum = (st_drop_geometry(ifg[,vv]) %>% pull)*(st_drop_geometry(ifg[,ww]) %>% pull) else ifg$gridvar = st_drop_geometry(ifg[,vv]) %>% pull
+        himg = himg %>% mutate(!!vvv := st_drop_geometry(ifg) %>% group_by(himgid)  %>% summarize(vvv = sum(wsum)) %>% select(vvv) %>% pull) %>%
+                        mutate(!!ww  := st_drop_geometry(ifg) %>% group_by(himgid)  %>% summarize(www = sum(.data[[ww]])) %>% select(www) %>% pull)
+      }
+    }
+  } else {
+    himg = gdl[[1]]   
+    if (missing(vars)) vvars = NULL else vvars = vars
+    if (missing(weights) || weights == 1) wweights = NULL else wweights = weights
+    hcols = which(names(himg)  %in% c("ID", "res", "count", "countw", "geometry", vvars, wweights, paste0("weight", 1:100)))
+    himg = himg[,hcols]
+  }
+  himg = himg %>% mutate(confidential = FALSE, reliability = FALSE, small = FALSE,
+                         freq = FALSE, dom = FALSE, ufun = FALSE)
   himgs = list()
   lohs = list()
   if (!missing(vars)) for (ivar in 1:length(vars)) himg[,paste0("vres", ivar)] = 0
   for (ires in 2:(length(ress) + 1)) {
     lres = ress[ires]
     if (ires <= length(ress)) {
-      limg = gdl[[ires]] %>% mutate(confidential = FALSE, reliability = FALSE, small = FALSE,
-                                      freq = FALSE, dom = FALSE, ufun = FALSE)
+      limg = gdl[[ires]] 
+      lcols = which(names(limg)  %in% c("ID", "res", "count", "countw", "geometry", vvars, wweights, paste0("weight", 1:100)))
+      limg = limg[,lcols]
+      limg = limg %>% mutate(confidential = FALSE, reliability = FALSE, small = FALSE,
+                 freq = FALSE, dom = FALSE, ufun = FALSE)
+      
       if (!missing(vars)) for (ivar in 1:length(vars)) limg[,paste0("vres", ivar)] = 0
     }    
     ##    #' @importFrom utils txtProgressBar setTxtProgressBar
@@ -371,23 +435,23 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
     if (!missing(vars) & ires <= length(ress)) {
       for (ivar in 1:length(vars)){
         if (tolower(countFeatureOrTotal) == "feature") {
-#          sel = (loh[[paste0(vars[ivar], "_w", ivar, ".x")]]  <
-#                   suppresslim*loh[[paste0(vars[ivar], "_w", ivar, ".y")]]) & loh[[paste0("weight",ivar, ".x")]] < mincount
+          #          sel = (loh[[paste0(vars[ivar], "_w", ivar, ".x")]]  <
+          #                   suppresslim*loh[[paste0(vars[ivar], "_w", ivar, ".y")]]) & loh[[paste0("weight",ivar, ".x")]] < mincount
           sel = (loh[[paste0(vars[ivar], ".x")]]  <
-                 suppresslim*loh[[paste0(vars[ivar], ".y")]]) & loh[[paste0("weight",ivar, ".x")]] < mincount
-#        } else sel = (loh[[paste0(vars[ivar], "_w", ivar, ".x")]]  <
-#                        suppresslim*loh[[paste0(vars[ivar], "_w", ivar, ".y")]]) & loh[["countw.x"]] < mincount
-      } else sel = (loh[[paste0(vars[ivar], ".x")]]  <
+                   suppresslim*loh[[paste0(vars[ivar], ".y")]]) & loh[[paste0("weight",ivar, ".x")]] < mincount
+          #        } else sel = (loh[[paste0(vars[ivar], "_w", ivar, ".x")]]  <
+          #                        suppresslim*loh[[paste0(vars[ivar], "_w", ivar, ".y")]]) & loh[["countw.x"]] < mincount
+        } else sel = (loh[[paste0(vars[ivar], ".x")]]  <
                         suppresslim*loh[[paste0(vars[ivar], ".y")]]) & loh[["countw.x"]] < mincount
         if (sumsmall & sum(sel) == 0) {
           sshare = data.frame(Group.1 = 999999, x = 9999999)
         } else if (sumsmall) {
-#          sshare = aggregate(loh[[paste0(vars[ivar], "_w", ivar, ".x")]][sel], by = list(loh$ID.y[sel]), sum) 
+          #          sshare = aggregate(loh[[paste0(vars[ivar], "_w", ivar, ".x")]][sel], by = list(loh$ID.y[sel]), sum) 
           sshare = aggregate(loh[[paste0(vars[ivar], ".x")]][sel], by = list(loh$ID.y[sel]), sum) 
           loh$sshare = sshare$x[match(loh$ID.y, sshare$Group.1)]
-#          loh$sshare[is.na(loh$sshare)] = max(loh[[paste0(vars[ivar], "_w", ivar, ".y")]])
+          #          loh$sshare[is.na(loh$sshare)] = max(loh[[paste0(vars[ivar], "_w", ivar, ".y")]])
           loh$sshare[is.na(loh$sshare)] = max(loh[[paste0(vars[ivar], ".y")]])
-#          loh[[paste("hsmall", ivar)]] = loh$sshare <  suppresslimSum*loh[[paste0(vars[ivar], "_w", ivar, ".y")]]
+          #          loh[[paste("hsmall", ivar)]] = loh$sshare <  suppresslimSum*loh[[paste0(vars[ivar], "_w", ivar, ".y")]]
           loh[[paste("hsmall", ivar)]] = loh$sshare <  suppresslimSum*loh[[paste0(vars[ivar], ".y")]]
         } else {
           loh[[paste("hsmall", ivar)]] = sel
@@ -421,9 +485,9 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
         dom = ifgdatl %>% filter(weight != 0)  %>%
           group_by(ehimgid) %>%  nest() %>%
           mutate(dominance = map(data, ~dominanceRule(., nlarge = nlarge, plim = plim, 
-                                                       domEstat = domEstat))) %>%
+                                                      domEstat = domEstat))) %>%
           unnest(dominance) %>% ungroup %>% select(dominance) %>% pull 
-
+        
         domid = which(dom)
         if (length(domid) > 0) himg$dom[domid] = TRUE
       } 
@@ -434,24 +498,24 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
         ifgdatl$ehimgid = ifgdatl$himgid
         ifgdatl = ifgdatl[order(ifgdatl$ehimgid),]
         dots = list(...)
-          fargs = names(formals(userfun))
-          if ("hareas" %in% fargs) hareas = st_area(himg)
-          passed_in  <- setdiff(intersect(ls(),fargs),"df")
-          names(passed_in) <- passed_in
-          args_to_pass <- map(passed_in, dynGet)
-          ddots = dots[names(dots) %in% fargs]
-          args_to_pass <- c(args_to_pass,ddots)
-          
-          localUserFun = function(subdata, args_to_pass) {
-            local_args <- c(list("df" = subdata), args_to_pass)
-            do.call(userfun, args=local_args)}
-          
-          ufRes = ifgdatl %>% 
-            group_by(ehimgid) %>%  nest() %>%
-            mutate(ufres = map(data, ~localUserFun(., args_to_pass))) %>%
-            unnest(ufres) %>% ungroup %>% select(ufres) %>% pull 
+        fargs = names(formals(userfun))
+        if ("hareas" %in% fargs) hareas = st_area(himg)
+        passed_in  <- setdiff(intersect(ls(),fargs),"df")
+        names(passed_in) <- passed_in
+        args_to_pass <- map(passed_in, dynGet)
+        ddots = dots[names(dots) %in% fargs]
+        args_to_pass <- c(args_to_pass,ddots)
+        
+        localUserFun = function(subdata, args_to_pass) {
+          local_args <- c(list("df" = subdata), args_to_pass)
+          do.call(userfun, args=local_args)}
+        
+        ufRes = ifgdatl %>% 
+          group_by(ehimgid) %>%  nest() %>%
+          mutate(ufres = map(data, ~localUserFun(., args_to_pass))) %>%
+          unnest(ufres) %>% ungroup %>% select(ufres) %>% pull 
         ufid = which(ufRes)
-        if (length(ufid) > 0) himg$ufun = TRUE
+        if (length(ufid) > 0) himg$ufun[ufid] = TRUE
       }
     }
     
@@ -512,7 +576,7 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
     himgs[[ires]] = himg
     lohs[[ires]] = loh
     
-    print(paste("ires", ires, ress[ires], "#himg-cells:", dim(himg)[1], "; removed:", 
+    if (ires <= length(ress)) print(paste("ires", ires, ress[ires], "#himg-cells:", dim(himg)[1], "; removed:", 
                 length(idRem), "; added:", length(idAdd), "; confidential:", sum(himg$confidential) ))
     if (plotIntermediate) {
       plot(himg[, "confidential"], main = "Confidential cells")
@@ -635,7 +699,5 @@ dominanceRule = function(ifglldat, nlarge, plim, domEstat = TRUE) {
   }
   dominance
 }
-
-
 
 

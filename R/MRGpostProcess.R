@@ -43,6 +43,14 @@ MRGpostProcess = function(himg, vars, remCols = TRUE, rounding = -1) {
     }
   }
   #' @importFrom tidyselect matches
-  if (remCols) himg = himg %>% select(!matches("small|reliability|idcount|idfail|vres|idRem|confidential"))
+  matchrem = c("small", "reliability", "dom", "freq", "idcount", "idfail", "vres", "idRem", "confidential", "ufun" )
+  if (!missing(vars) && length(vars) > 0) { 
+    mm = unlist(lapply(1:length(matchrem), FUN = function(x) {ii = grep(matchrem[x], vars); if (length(ii) > 0) x else NULL}))
+  } else mm = NULL
+  if (length(mm) > 0) matchrem = matchrem[-mm]  
+  matchrem = paste(matchrem, collapse = "|")
+  matchrem = "small|reliability|idcount|idfail|vres|idRem|confidential|ufun|dom|freq"
+  
+  if (remCols) himg = himg %>% select(!matches(matchrem))
 himg
 }

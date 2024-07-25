@@ -2,13 +2,17 @@
 % Please edit documentation in R/multiResGrid.R, R/zzz.R
 \name{multiResGrid.MRG}
 \alias{multiResGrid.MRG}
+\alias{multiResGrid.data.frame}
 \alias{multiResGrid.list}
 \alias{multiResGrid}
 \title{Function that creates a multi-resolution grid with larger grid cells in
-regions with lower resolution of farms, or where farms need to
-be anonymized for disclosure control reasons}
+regions with lower resolution of data, or where data needs to
+be anonymized for disclosure control reasons. The function can also be used
+to create a grid of new variables, following an existing grid.}
 \usage{
 \method{multiResGrid}{MRG}(MRGobject, ...)
+
+\method{multiResGrid}{data.frame}(himg, ...)
 
 \method{multiResGrid}{list}(
   gdl,
@@ -48,6 +52,8 @@ multiResGrid(...)
 the necessary variables and parameters, from a call to createMRGobject}
 
 \item{...}{Possible arguments to userfun or other internal functions}
+
+\item{himg}{The grid resulting from a call to multiResGrid}
 
 \item{gdl}{A list of gridded data - with different resolutions}
 
@@ -144,7 +150,8 @@ of decimal places
  for \code{digits} in \code{\link{round}}.}
 
 \item{remCols}{Logical; Should intermediate columns be removed? Can be set
-to FALSE for further analyses}
+to FALSE for further analyses. Temporary columns will not be removed if their names 
+partly match the variable names of \code{vars}}
 }
 \description{
 Two main confidentiality rules are considered:
@@ -162,9 +169,21 @@ This function will find the highest resolution data set that fulfills the
        otherwise only the 5 km grid cell will be kept. This will again be tested against the confidentiality
        rules in the next iteration, when grid cells will possibly be merged to 10 km grid cells.
 
+       The function can also be called if it is necessary to create a grid of a new variable for the same
+       grid as an already existing variable. The confidentiality rules will then be applied to the new
+       variables for the existing grid cells, and mask the ones that do not respect the rules.
+       The function will not do any further merging
+       of grid cells, for this it is necessary to grid the variables together.
+       This feature is useful when the new data set has a similar resolution 
+       as the original data set. It will give a high number of missing values if
+       the resolution of the new data is more sparse than the original. In the examples below,
+       this means that it is possible to copy the grid of organic organic 
+       agricultural area to a grid of all agricultural area, whereas the opposite
+       will not work well.
+
        The standard threshold rule for spatial data is at least 10 units (mincount). 
        The parameters nlarge and plim are used for determining the dominance treatment for the variable of interest,
-       with default values of nlarge=2 and plim=0.85. 
+       with default values of \code{nlarge = 2} and \code{plim = 0.85}. 
        If more than plim of the values of the grid cell (e.g. UAA, arable land, number of livestock)
        is explained by 1-nlarge weighted holdings, the grid cell will not pass the confidentiality rule.
        
@@ -250,8 +269,8 @@ ggplot(himg0) + geom_sf(aes(fill = count))
 
 # Create a multi-resolution grid of UAA, also based on the dominance rule (default)
 himg1 = multiResGrid(ifl, vars = "UAA", ifg = ifg)
-ggplot(himg1) + geom_sf(aes(fill = UAA))
-
+p1 = ggplot(himg1) + geom_sf(aes(fill = UAA))
+p1
 # Create multi-resolution grid of organic UAA
 himg2 = multiResGrid(ifl2, vars = "UAAXK0000_ORG", ifg = ifg)
 himg21 = multiResGrid(ifl2, vars = "UAAXK0000_ORG", ifg = ifg, postProcess = FALSE)
@@ -261,9 +280,16 @@ ggplot(himg2) + geom_sf(aes(fill = UAAXK0000_ORG))
 # Create joint multi-resolution grid of organic UAA and total UAA
 himg3 = multiResGrid(ifl3, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
                   checkReliability = FALSE, suppresslim = 0)
-p1 = ggplot(himg3) + geom_sf(aes(fill = UAA))
-p2 = ggplot(himg3) + geom_sf(aes(fill = UAAXK0000_ORG))
-p1 + p2
+# Create multi-resolution grid of organic UAA, based on the UAA grid
+# The large number of missing values indicates that this feature should
+# mainly be used for data that have similar or higher resolution as the
+# original data set.
+himg33 = multiResGrid(himg1, vars = c("UAAXK0000_ORG"), ifg = ifg, 
+                  checkReliability = FALSE, suppresslim = 0)
+p31 = ggplot(himg3) + geom_sf(aes(fill = UAA))
+p32 = ggplot(himg3) + geom_sf(aes(fill = UAAXK0000_ORG))
+p33 = ggplot(himg33) + geom_sf(aes(fill = UAAXK0000_ORG))
+p31 + p32 + p33
 
 # Create multi-resolution grid of UAA, based on survey data,
 # with and without applying reliability check

@@ -13,7 +13,8 @@ MRGpostProcess(himg, vars, remCols = TRUE, rounding = -1)
 used for individual farm specific anonymization rules)}
 
 \item{remCols}{Logical; Should intermediate columns be removed? Can be set
-to FALSE for further analyses}
+to FALSE for further analyses. Temporary columns will not be removed if their names 
+partly match the variable names of \code{vars}}
 
 \item{rounding}{either logical (FALSE) or an integer indicating the number 
 of decimal places 

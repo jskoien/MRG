@@ -92,7 +92,8 @@ MRGparam = function(par) {
                              step afterwards (FALSE). The second option is useful when wanting
                              to check the confidential grid cells of the final map",
               remCols = "@param remCols Logical; Should intermediate columns be removed? Can be set
-                          to FALSE for further analyses",
+                          to FALSE for further analyses. Temporary columns will not be removed if their names 
+                          partly match the variable names of \\code{vars}",
               rounding = "@param rounding either logical (FALSE) or an integer indicating the number 
                       of decimal places 
                        to be used. Negative values are allowed (such as the default

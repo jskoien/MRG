@@ -154,7 +154,8 @@ of decimal places
  for \code{digits} in \code{\link{round}}.}
 
 \item{remCols}{Logical; Should intermediate columns be removed? Can be set
-to FALSE for further analyses}
+to FALSE for further analyses. Temporary columns will not be removed if their names 
+partly match the variable names of \code{vars}}
 
 \item{...}{Possible arguments to userfun or other internal functions}
 }
