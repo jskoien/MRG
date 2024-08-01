@@ -19,6 +19,7 @@
 #'          The result will either be a set of sf-polygons (default) or a stars object.
 #'
 #' @examples
+#' \donttest{
 #' library(sf)
 #' library(viridis)
 #' library(ggplot2)
@@ -53,7 +54,7 @@
 #'
 #' MRGcluster(action = "stop")
 #'
-#'
+#'}
 #'
 #'
 #' @export

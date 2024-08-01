@@ -13,6 +13,7 @@
 #' and the post processing be done separately.
 #'
 #' @examples
+#' \donttest{
 #' library(sf)
 #'
 #' # These are SYNTHETIC agricultural FSS data 
@@ -28,10 +29,12 @@
 #' 
 #' # Confidential grid cells, being suppressed in postProcessing
 #' himg[himg$confidential,]
-#'  
+#'  }
 #' @export
 MRGpostProcess = function(himg, vars, remCols = TRUE, rounding = -1) {
   if (missing(vars) & !is.null(attr(himg, "vars"))) vars = attr(himg, "vars")
+  if (missing(remCols) & !is.null(attr(himg, "remCols"))) remCols = attr(himg, "remCols")
+  if (missing(rounding) & !is.null(attr(himg, "rounding"))) rounding = attr(himg, "rounding")
   himg[himg$confidential, c("count", "countw")] = NA
   if (!missing(vars) & !isFALSE(rounding)) {
     for (ivar in 1:length(vars)) {

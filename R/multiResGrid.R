@@ -346,7 +346,7 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
                               plotIntermediate = FALSE,  addIntermediate = FALSE,
                               postProcess = TRUE, rounding = -1, remCols = TRUE, ...) {
   #  To avoid R CMD check notes
-  hsum = small = weight = data = himgid = dominance = . = NULL
+  hsum = wsum = www = small = weight = data = himgid = dominance = . = NULL
   if (!missing(ifg) && !inherits(ifg, "sf")) stop("ifg is not an sf-object ")
   if (length(gdl) > 1) ress = unlist(lapply(gdl, FUN = function(gdll) gdll$res[1])) else ress = 0
   if (checkReliability) {
@@ -379,6 +379,7 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
     if (!"ID" %in% names(ifg)) ifg$ID = 1:dim(ifg)[1]
     ifg = ifg %>% mutate(himgid = st_join(., gdl, join = st_within)$ID.y) 
     himg = gdl[, c("ID", "res")]
+    #' @importFrom dplyr summarize count
     himg = himg %>% mutate(count = st_drop_geometry(ifg) %>% group_by(himgid) %>% summarize(count = n()) %>% select(count) %>% pull)
     
     if (missing(weights) || is.null(weights)) weights = 1
@@ -390,6 +391,7 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
         ww = paste0("weight", ivar)
         vv = paste0("gridvar", ivar)
         vvv = vars[ivar]
+        #' @importFrom rlang :=
         if (!is.null(ww) & ww != 1) ifg$wsum = (st_drop_geometry(ifg[,vv]) %>% pull)*(st_drop_geometry(ifg[,ww]) %>% pull) else ifg$gridvar = st_drop_geometry(ifg[,vv]) %>% pull
         himg = himg %>% mutate(!!vvv := st_drop_geometry(ifg) %>% group_by(himgid)  %>% summarize(vvv = sum(wsum)) %>% select(vvv) %>% pull) %>%
                         mutate(!!ww  := st_drop_geometry(ifg) %>% group_by(himgid)  %>% summarize(www = sum(.data[[ww]])) %>% select(www) %>% pull)
@@ -398,7 +400,7 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
   } else {
     himg = gdl[[1]]   
     if (missing(vars)) vvars = NULL else vvars = vars
-    if (missing(weights) || weights == 1) wweights = NULL else wweights = weights
+    if (missing(weights) || is.null(weights) || weights == 1) wweights = NULL else wweights = weights
     hcols = which(names(himg)  %in% c("ID", "res", "count", "countw", "geometry", vvars, wweights, paste0("weight", 1:100)))
     himg = himg[,hcols]
   }
@@ -446,6 +448,7 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
         if (sumsmall & sum(sel) == 0) {
           sshare = data.frame(Group.1 = 999999, x = 9999999)
         } else if (sumsmall) {
+          #' @importFrom stats aggregate
           #          sshare = aggregate(loh[[paste0(vars[ivar], "_w", ivar, ".x")]][sel], by = list(loh$ID.y[sel]), sum) 
           sshare = aggregate(loh[[paste0(vars[ivar], ".x")]][sel], by = list(loh$ID.y[sel]), sum) 
           loh$sshare = sshare$x[match(loh$ID.y, sshare$Group.1)]
@@ -585,7 +588,12 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
   }
   if ("gridvar" %in% names(himg)) himg = himg[, -grep("gridvar", names(himg))]
   if (!missing(vars)) attr(himg, "vars") = vars
-  if (postProcess) himg = MRGpostProcess(himg, vars, remCols, rounding)
+  if (postProcess) {
+    himg = MRGpostProcess(himg, vars, remCols, rounding)
+  } else {
+    attr(himg, "remCols" ) = remCols
+    attr(himg, "rounding") = rounding
+  }
   if (addIntermediate) {
     attr(himg, "himgs") = himgs
     attr(himg, "lohs") = lohs

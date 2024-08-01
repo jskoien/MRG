@@ -37,6 +37,7 @@
 
 #' 
 #' @examples
+#' \donttest{
 #' library(sf)
 #' library(giscoR)
 #'
@@ -58,7 +59,7 @@
 #' himg2 = multiResGrid(MRGobject)
 #' himg3 = multiResGrid(MRGobject, suppresslim = 0.05)
 #' 
-#' 
+#'} 
 #' 
 #' @export
 createMRGobject = function(ifg, ress = c(1,5,10,20,40)*1000,  

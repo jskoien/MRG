@@ -37,6 +37,7 @@
 #'
 #'
 #' @examples
+#' \donttest{
 #' library(sf)
 #' library(viridis)
 #' library(ggplot2)
@@ -53,12 +54,12 @@
 #' dkb = borders[borders$CNTR_CODE == "DK",] %>% st_transform(crs = 3035)
 #'
 #' # Set the base resolutions, and create a hierarchical list with gridded data
-#' ress = c(1,5,10,20,40,80, 160, 320, 640, 1280, 25680)*1000
+#' ress = c(1,5,10,20,40,80, 160, 320, 640, 1280, 2560)*1000
 #' # Create the grid with UAA as variable and EXT_CORE as weight
 #' # These can be dropped if only the number of farms are of interest in the analyses
 #' ifl = gridData(ifg, "UAA", weight = "EXT_CORE", res = ress)
 #'
-#' # Run the procedure for the third resolution level (8 km), only using number of holdings
+#' # Run the procedure for the third resolution level (10 km), only using number of holdings
 #' # as confidentiality rule
 #' # himg1 and himg2 should give the same result, but only when sampleRandom = FALSE
 #' himg1 <- remSmall(ifl, ress, 3, sampleRandom = FALSE)
@@ -72,14 +73,14 @@
 #' plot(himg2[, "UAA"])
 #' 
 #' # Run the procedure for organic UAA, but still requiring 10 holdings of any kind per grid cell
-#' # Using resolution level 5 (32 km)
+#' # Using resolution level 5 (40 km)
 #'  iflOuaaAll = gridData(ifg, "UAAXK0000_ORG", res = ress)
 #' himg3 = remSmall(iflOuaaAll, ress, 5, ifg = ifg, var = "UAAXK0000_ORG")
 #' plot(himg3[, "count"])
 #' plot(himg3[, "UAAXK0000_ORG"])
 #'
 #' # Run the procedure for organic UAA, but require at least 10 organic holdings per grid cell
-#' # Using resolution level 5 (32 km)
+#' # Using resolution level 5 (40 km)
 #' ifgOuaa = ifg[ifg$UAAXK0000_ORG > 0, ]
 #' iflOuaa = list()
 #' iflOuaa = gridData(ifgOuaa, "UAAXK0000_ORG",  res = ress)
@@ -88,6 +89,7 @@
 #' plot(himg4[, "UAAXK0000_ORG"])
 #' 
 #' himg4l = list()
+#' # Run the proceduure for organic UAA for different resolution levels
 #' for (ipl in 1:6) himg4l[[ipl]] = remSmall(iflOuaa, ress, ipl, ifg = ifg, var = "UAAXK0000_ORG")
 #' 
 #' 
@@ -195,10 +197,9 @@
 #'   theme_bw()
 #'   }
 #'   ppl[[1]] + ppl[[2]] + ppl[[3]] + ppl[[4]] + plot_layout(guides = "collect")
-#'   ppl[[2]] + ppl[[3]] + ppl[[4]] + ppl[[5]] + plot_layout(guides = "collect")
 #'   
 #' MRGcluster(action = "stop")
-#'
+#'}
 #' @export
 remSmall = function(gdl, ress, ires0, mincount = 10, ifg, var, weight, nlarge = 2, plim = 0.85,
                         sampleRandom = TRUE, domEstat = TRUE, 
