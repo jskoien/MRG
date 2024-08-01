@@ -501,6 +501,10 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
         ifgdatl$ehimgid = ifgdatl$himgid
         ifgdatl = ifgdatl[order(ifgdatl$ehimgid),]
         dots = list(...)
+        # The next 14 lines are based on an answer on StackOverflow:
+        # https://stackoverflow.com/questions/78647845/using-purrrmap-with-a-user-defined-function-how-to-pass-arguments
+        # by the user Nir Graham (userid: 11726436)
+        # licensed by StackOverlow under CC BY-SA 4.0
         fargs = names(formals(userfun))
         if ("hareas" %in% fargs) hareas = st_area(himg)
         passed_in  <- setdiff(intersect(ls(),fargs),"df")

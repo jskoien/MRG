@@ -1,7 +1,7 @@
 Package: MRG
 Type: Package
 Title: Functions to Create Non-Confidential Multi-Resolution Grids
-Version: 0.1.9
+Version: 0.2.0
 Author: Jon Olav Skoien, Nicolas Lampach
 Maintainer: Jon Olav Skoien <jon.skoien@gmail.com>
 Imports: magrittr, parallel, terra, sf, stars, plyr, dplyr, rlang, sjmisc, vardpoor, 
@@ -10,7 +10,7 @@ Suggests: ggplot2, patchwork, viridis, knitr, rmarkdown, giscoR, bookdown, units
 Description: Functionality for creating 'gridded' data, respecting the confidentiality rules, 
     such as a minimum number of units and dominance by one or more units in the grid cell.
     The functions also include the possibility for contextual suppression of data.
-License: BSD 3-clause License + file LICENSE
+License: GPL(>=3)
 Encoding: UTF-8
 RoxygenNote: 7.2.3
 VignetteBuilder: knitr
