@@ -147,7 +147,7 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
   }
     #' @importFrom sf st_as_sf
     ifsret2 = st_as_sf(ifsret)
-    if (verbose) print("succeeded creating sf-object ")
+    if (verbose) print("succeeded creating sf-object, with size in MB:", object.size(ifsret2)/1e6 )
     rm(ifsret)
     ifsret2$res = res
     ifsret2$ID = 1:dim(ifsret2)[1]
