@@ -73,7 +73,7 @@ createMRGobject = function(ifg, ress = c(1,5,10,20,40)*1000,
                            reliabilitySplit = TRUE, plotIntermediate = FALSE, addIntermediate = FALSE, 
                            locAdj = "LL", 
                            postProcess = TRUE,
-                           rounding = -1, remCols = TRUE, verbose = FALSE, ...) {
+                           rounding = -1, remCols = TRUE, ...) {
   
   if (is.list(ifg) & !inherits(ifg, "data.frame")) {
     if (is.null(lnames)) if (!is.null(names(ifg))) lnames = names(ifg) else lnames = make.names(1:length(ifg))
