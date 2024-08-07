@@ -131,9 +131,9 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
     if (verbose) print("succeeded creating rast-object ")
     #' @importFrom terra values
     terra::values(ss) = terra::values(ss) # Forcing raster data into memory
-    if (verbose) print("succeeded forcing raster data into memory ")
+    if (verbose) print("succeeded forcing raster data into memory, with size in MB:", object.size(ss)/1e6)
     ifsret = st_as_stars(ss)
-    if (verbose) print("succeeded creating stars-object ")
+    if (verbose) print("succeeded creating stars-object, with size in MB:", object.size(ifsret)/1e6 )
   }  else {
     dnumw = dnum
     names(dnumw) = "countw"
@@ -141,8 +141,9 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
     ss = rast(list(dnum, dnumw))
     if (verbose) print("succeeded rasterizing count ")
     terra::values(ss) = terra::values(ss)
+    if (verbose) print("succeeded forcing raster data into memory, with size in MB:", object.size(ss)/1e6)
     ifsret = st_as_stars(ss)
-    if (verbose) print("succeeded creating stars-object ")
+    if (verbose) print("succeeded creating stars-object, with size in MB:", object.size(ifsret)/1e6 )
   }
     #' @importFrom sf st_as_sf
     ifsret2 = st_as_sf(ifsret)
