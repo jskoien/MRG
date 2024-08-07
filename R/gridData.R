@@ -8,6 +8,7 @@
 #' @eval MRGparam("nclus")
 #' @eval MRGparam("confrules")
 #' @eval MRGparam("crsOut")
+#' @eval MRGparam("verbose")
 #' 
 #' 
 #' @details This will create hierarchical grids of the selected variable(s), at the requested resolution(s),
@@ -59,7 +60,7 @@
 #'
 #' @export
 gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,  
-                   nclus = 1, confrules = "individual", crsOut = 3035) {
+                   nclus = 1, confrules = "individual", crsOut = 3035, verbose = FALSE) {
   
   if ( !length(weights) %in% c(0,1,length(vars))) stop(paste("The length of weight should be 0,1 or equal to the length of vars"))
   if (!inherits(ifg, "sf"))  ifg = fssgeo(ifg)
@@ -96,13 +97,16 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
                    example run \" ifg <- st_jitter(ifg) \" ") 
     }
 
-  
+  if (verbose) print(paste("before rasterize - dim(ifg): ", dim(ifg)[1]))
   dnum = rasterize(ifg, field = "count", r0, fun="sum")
+  if (verbose) print("rasterize(ifg, \"count\") succeeded")
   names(dnum) = "count"
   if (!is.null(vars)) {
     ifg = addweights(ifg, vars, weights)
     ifg$countw = ifg$count * ifg$weight1
+    if (verbose) print("rasterizing weighted count")
     dnumw = rasterize(ifg, field = "countw", r0, fun = "sum")
+    if (verbose) print("succeeded rasterizing weighted count")
     names(dnumw) = "countw"
     dind = dweight = list()
     for (iw in 1:length(vars)) {
@@ -110,28 +114,39 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
       ifg[, paste(vars[iw],"_w", iw, sep="")] = 
               st_drop_geometry(ifg)[, vars[iw]] * 
                    st_drop_geometry(ifg[,paste0("weight", iw)])
-#      dind[[iw]] = c(rasterize(ifg, field = c(vars[iw], paste0(vars[iw], "_w", iw)), r0, fun = "sum"))
-      dind[[iw]] = c(rasterize(ifg, field = paste0(vars[iw], "_w", iw), r0, fun = "sum"))
+      if (verbose) print("rasterizing variable ", vars[iw])
+      dind[[iw]] = rasterize(ifg, field = paste0(vars[iw], "_w", iw), r0, fun = "sum")
+      if (verbose) print("succeeded rasterizing variable ", vars[iw])
       
+      if (verbose) print("rasterizing weight ", iw)
       dweight[[iw]] = rasterize(ifg, field = paste0("weight", iw), r0, fun = "sum")
+      if (verbose) print("succeeded rasterizing weight", iw)
       names(dweight[[iw]]) = paste0("weight", iw)
   #    names(dind[[iw]]) = c(vars[iw], paste0(vars[iw], "_w", iw))
       names(dind[[iw]]) = vars[iw]
     }
     #' @importFrom stars st_as_stars
+    if (verbose) print("creating rast-object ")
     ss = rast(list(dnum, dnumw, rast(dind), rast(dweight)))
+    if (verbose) print("succeeded creating rast-object ")
     #' @importFrom terra values
     terra::values(ss) = terra::values(ss) # Forcing raster data into memory
+    if (verbose) print("succeeded forcing raster data into memory ")
     ifsret = st_as_stars(ss)
+    if (verbose) print("succeeded creating stars-object ")
   }  else {
     dnumw = dnum
     names(dnumw) = "countw"
+    if (verbose) print("rasterizing count ")
     ss = rast(list(dnum, dnumw))
+    if (verbose) print("succeeded rasterizing count ")
     terra::values(ss) = terra::values(ss)
     ifsret = st_as_stars(ss)
+    if (verbose) print("succeeded creating stars-object ")
   }
     #' @importFrom sf st_as_sf
     ifsret2 = st_as_sf(ifsret)
+    if (verbose) print("succeeded creating sf-object ")
     rm(ifsret)
     ifsret2$res = res
     ifsret2$ID = 1:dim(ifsret2)[1]
@@ -141,7 +156,7 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
 }
 
 addweights = function(ifg, vars, weights) {
-if (missing(weights) || is.null(weights)) {
+if (missing(weights) || is.null(weights) || weights == 1) {
   for (iw in 1:length(vars)) ifg[,paste0("weight", iw)] = 1 
 } else if (length(weights) == 1) { 
   for (iw in 1:length(vars)) ifg[,paste0("weight", iw)] = as.numeric(data.frame(ifg)[, weights])
