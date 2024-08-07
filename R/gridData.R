@@ -73,8 +73,8 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
       cl = MRGcluster(nclus = nclus, action = "start")
       clusterEvalQ(cl, c(require(terra), require(sf), require(stars)))
       clusterExport(cl, varlist = c("res", "ifg", "weights", "vars", "addweights"), envir=environment())
-      ret = parLapply(cl, res, fun = gridData, ifg = ifg, weights = weights, vars = vars)
-    } else ret = lapply(res, FUN = gridData, ifg = ifg, weights = weights, vars = vars)
+      ret = parLapply(cl, res, fun = gridData, ifg = ifg, weights = weights, vars = vars, verbose = verbose)
+    } else ret = lapply(res, FUN = gridData, ifg = ifg, weights = weights, vars = vars, verbose = verbose)
     return(ret)
   }
 
@@ -114,13 +114,13 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
       ifg[, paste(vars[iw],"_w", iw, sep="")] = 
               st_drop_geometry(ifg)[, vars[iw]] * 
                    st_drop_geometry(ifg[,paste0("weight", iw)])
-      if (verbose) print("rasterizing variable ", vars[iw])
+      if (verbose) print(paste("rasterizing variable ", vars[iw]))
       dind[[iw]] = rasterize(ifg, field = paste0(vars[iw], "_w", iw), r0, fun = "sum")
-      if (verbose) print("succeeded rasterizing variable ", vars[iw])
+      if (verbose) print(paste("succeeded rasterizing variable ", vars[iw]))
       
-      if (verbose) print("rasterizing weight ", iw)
+      if (verbose) print(paste("rasterizing weight ", iw))
       dweight[[iw]] = rasterize(ifg, field = paste0("weight", iw), r0, fun = "sum")
-      if (verbose) print("succeeded rasterizing weight", iw)
+      if (verbose) print(paste("succeeded rasterizing weight", iw))
       names(dweight[[iw]]) = paste0("weight", iw)
   #    names(dind[[iw]]) = c(vars[iw], paste0(vars[iw], "_w", iw))
       names(dind[[iw]]) = vars[iw]
@@ -131,9 +131,9 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
     if (verbose) print("succeeded creating rast-object ")
     #' @importFrom terra values
     terra::values(ss) = terra::values(ss) # Forcing raster data into memory
-    if (verbose) print("succeeded forcing raster data into memory, with size in MB:", object.size(ss)/1e6)
+    if (verbose) print(paste("succeeded forcing raster data into memory, with size in MB:", object.size(ss)/1e6))
     ifsret = st_as_stars(ss)
-    if (verbose) print("succeeded creating stars-object, with size in MB:", object.size(ifsret)/1e6 )
+    if (verbose) print(paste("succeeded creating stars-object, with size in MB:", object.size(ifsret)/1e6 ))
   }  else {
     dnumw = dnum
     names(dnumw) = "countw"
@@ -141,13 +141,13 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
     ss = rast(list(dnum, dnumw))
     if (verbose) print("succeeded rasterizing count ")
     terra::values(ss) = terra::values(ss)
-    if (verbose) print("succeeded forcing raster data into memory, with size in MB:", object.size(ss)/1e6)
+    if (verbose) print(paste("succeeded forcing raster data into memory, with size in MB:", object.size(ss)/1e6))
     ifsret = st_as_stars(ss)
-    if (verbose) print("succeeded creating stars-object, with size in MB:", object.size(ifsret)/1e6 )
+    if (verbose) print(paste("succeeded creating stars-object, with size in MB:", object.size(ifsret)/1e6 ))
   }
     #' @importFrom sf st_as_sf
     ifsret2 = st_as_sf(ifsret)
-    if (verbose) print("succeeded creating sf-object, with size in MB:", object.size(ifsret2)/1e6 )
+    if (verbose) print(paste("succeeded creating sf-object, with size in MB:", object.size(ifsret2)/1e6 ))
     rm(ifsret)
     ifsret2$res = res
     ifsret2$ID = 1:dim(ifsret2)[1]
