@@ -73,7 +73,7 @@ createMRGobject = function(ifg, ress = c(1,5,10,20,40)*1000,
                            reliabilitySplit = TRUE, plotIntermediate = FALSE, addIntermediate = FALSE, 
                            locAdj = "LL", 
                            postProcess = TRUE,
-                           rounding = -1, remCols = TRUE, ...) {
+                           rounding = -1, remCols = TRUE, verbose = FALSE, ...) {
   
   if (is.list(ifg) & !inherits(ifg, "data.frame")) {
     if (is.null(lnames)) if (!is.null(names(ifg))) lnames = names(ifg) else lnames = make.names(1:length(ifg))
@@ -91,7 +91,7 @@ createMRGobject = function(ifg, ress = c(1,5,10,20,40)*1000,
   if (!isFALSE(locAdj)) ifg = locAdjFun(ifg, locAdj, ress[1])
   
   gdl = gridData(ifg, res = ress, vars = vars, weights = weights, 
-                                  nclus = nclus)  
+                                  nclus = nclus, verbose = verbose)  
   MRGobject = list(gdl = gdl, ifg = ifg, ress = ress, vars = vars, weights = weights,
                    mincount = mincount, countFeatureOrTotal = countFeatureOrTotal, #minpos = minpos, 
                    nlarge = nlarge, plim = plim,
@@ -103,7 +103,8 @@ createMRGobject = function(ifg, ress = c(1,5,10,20,40)*1000,
                                  sumsmall= sumsmall, suppresslimSum = suppresslimSum, 
                                  plotIntermediate = plotIntermediate, addIntermeidate = addIntermediate, 
                                  reliabilitySplit = reliabilitySplit,
-                                 locAdj = locAdj, postProcess = postProcess, rounding = rounding, remCols = remCols)
+                                 locAdj = locAdj, postProcess = postProcess, rounding = rounding, 
+                                 remCols = remCols)
 
   dots = list(...)
   MRGobject = modifyList(MRGobject, dots)
