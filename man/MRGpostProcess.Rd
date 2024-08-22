@@ -33,6 +33,7 @@ will be suppressed, and the values before rounding. In that case
 and the post processing be done separately.
 }
 \examples{
+\donttest{
 library(sf)
 
 # These are SYNTHETIC agricultural FSS data 
@@ -48,5 +49,5 @@ himgp = MRGpostProcess(himg, var = "UAA")
 
 # Confidential grid cells, being suppressed in postProcessing
 himg[himg$confidential,]
- 
+ }
 }

@@ -11,7 +11,8 @@ gridData(
   weights = NULL,
   nclus = 1,
   confrules = "individual",
-  crsOut = 3035
+  crsOut = 3035,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -39,6 +40,8 @@ a value of the individual vars above zero ("individual") or the total number of 
 the data set ("total")?}
 
 \item{crsOut}{The coordinate reference system (crs) to be used}
+
+\item{verbose}{indicates if some extra output should be printed}
 }
 \description{
 Function that converts point data to gridded data  (polygon values) or a list of gridded data
@@ -53,6 +56,7 @@ This will create hierarchical grids of the selected variable(s), at the requeste
          The result will either be a set of sf-polygons (default) or a stars object.
 }
 \examples{
+\donttest{
 library(sf)
 library(viridis)
 library(ggplot2)
@@ -87,7 +91,7 @@ ggplot() + geom_sf(data = ifall, aes(fill = count, color = count)) +
 
 MRGcluster(action = "stop")
 
-
+}
 
 
 }

@@ -163,6 +163,7 @@ partly match the variable names of \code{vars}}
 Create a single object containing all necessary objects for multiResGrid functions
 }
 \examples{
+\donttest{
 library(sf)
 library(giscoR)
 
@@ -183,6 +184,6 @@ MRGobject$suppresslim = 0.02
 himg2 = multiResGrid(MRGobject)
 himg3 = multiResGrid(MRGobject, suppresslim = 0.05)
 
-
+} 
 
 }

@@ -94,7 +94,8 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
     if (min(xdiffs)/res(r0)[1] < 1e-9 | min(ydiffs)/res(r0)[2] < 1e-9) {
         warning("One or more points are practically on the border between grid cells,
                                         it is advisible to shift the coordinates a bit (for 
-                   example run \" ifg <- st_jitter(ifg) \" ") 
+                   example run \\code{ifg <- st_jitter(ifg)} beforehand, 
+                or look at the \\code{locAdj} argument of \\code{\\link{fssgeo}}") 
     }
 
   if (verbose) print(paste("before rasterize - dim(ifg): ", dim(ifg)[1]))
