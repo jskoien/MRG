@@ -75,9 +75,9 @@ MRGparam = function(par) {
                            and lohs (overlay of himg and the lower resolution grid) as an attribute to
                            the object to be returned",
                reliabilitySplit = "@param reliabilitySplit Logical or number - parameter to be used in
-                            calculation of the reliability (if checkReliability = TRUE), a limit for when
-                            the reliability calculation should be done in batches. 
-                              If TRUE it will use the default value (50,000), otherwise a user value. If FALSE, the data set will not
+                            calculation of the reliability (if checkReliability = TRUE). It can either give the 
+                            number of groups, or if TRUE, it will create groups of approdcimately 50,000 records per group. 
+                            If FALSE, the data set will not
                                be split independent on the size.", 
                locAdj = "@param locAdj parameter to adjust the coordinates if they are exactly on the borders between grid cells. The values
                           can either be FALSE, or \"jitter\" (adding a small random value to the coordinates, essentially spreading

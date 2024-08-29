@@ -1,0 +1,317 @@
+
+R version 4.4.1 (2024-06-14) -- "Race for Your Life"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> s1 = Sys.time()
+> library(MRG)
+> library(sf)
+Linking to GEOS 3.11.1, GDAL 3.6.4, PROJ 9.1.1; sf_use_s2() is TRUE
+> library(giscoR)
+> #'
+> # These are SYNTHETIC agricultural FSS data 
+> data(ifs_dk) # Census data
+> ifs_weight = ifs_dk %>% dplyr::filter(Sample == 1) # Extract weighted subsample
+> 
+> # Create spatial data
+> ifg = fssgeo(ifs_dk, locAdj = "LL")
+> fsg = fssgeo(ifs_weight, locAdj = "LL")
+> # Read nuts borders, used for extracting smaller data set 
+> borders = gisco_get_nuts(nuts_level = 2)
+> 
+> dkb = borders[borders$CNTR_CODE == "DK",] %>% st_transform(crs = 3035)
+> ifg$dkb = st_join(ifg, dkb)$NUTS_ID
+> ifg = ifg[!is.na(ifg$dkb) & ifg$dkb == "DK01",]
+> fsg$dkb = st_join(fsg, dkb)$NUTS_ID
+> fsg = fsg[!is.na(fsg$dkb) & fsg$dkb == "DK01",]
+> 
+> s2 = Sys.time()
+> #'
+> # Set the base resolutions, and create a hierarchical list with gridded data
+> ress = c(1,5,10,20,40)*1000
+> # Gridding Utilized agricultural area (UAA)
+> ifl = gridData(ifg, "UAA", res = ress)
+> 
+> # Gridding UAA and organic UAA together
+> ifl3 = gridData(ifg, vars = c("UAA", "UAAXK0000_ORG"), res = ress)
+> 
+> # Gridding the UAA from the survey - the survey weights are in the column EXT_MODULE
+> fsl = gridData(fsg,  vars = c("UAA"), weights = "EXT_MODULE",  res = ress)
+> 
+> # Create a multi-resolution grid only with farm number as confidentiality rule, then plot results
+> himg0 = multiResGrid(ifl, checkReliability = FALSE, suppresslim = 0)
+[1] "ires 2 5000 #himg-cells: 118 ; removed: 1192 ; added: 108 ; confidential: 10"
+[1] "ires 3 10000 #himg-cells: 78 ; removed: 60 ; added: 20 ; confidential: 5"
+[1] "ires 4 20000 #himg-cells: 63 ; removed: 18 ; added: 3 ; confidential: 2"
+[1] "ires 5 40000 #himg-cells: 51 ; removed: 13 ; added: 1 ; confidential: 1"
+> 
+> # Create a multi-resolution grid of UAA, also based on the dominance rule (default)
+> himg1 = multiResGrid(ifl, vars = "UAA", ifg = ifg)
+[1] "ires 2 5000 #himg-cells: 118 ; removed: 1192 ; added: 108 ; confidential: 10"
+[1] "ires 3 10000 #himg-cells: 78 ; removed: 60 ; added: 20 ; confidential: 5"
+[1] "ires 4 20000 #himg-cells: 63 ; removed: 18 ; added: 3 ; confidential: 2"
+[1] "ires 5 40000 #himg-cells: 51 ; removed: 13 ; added: 1 ; confidential: 1"
+> 
+> 
+> # Create joint multi-resolution grid of organic UAA and total UAA
+> himg3 = multiResGrid(ifl3, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
++                   checkReliability = FALSE, suppresslim = 0)
+[1] "ires 2 5000 #himg-cells: 118 ; removed: 1192 ; added: 108 ; confidential: 10"
+[1] "ires 3 10000 #himg-cells: 40 ; removed: 111 ; added: 33 ; confidential: 6"
+[1] "ires 4 20000 #himg-cells: 18 ; removed: 33 ; added: 11 ; confidential: 6"
+[1] "ires 5 40000 #himg-cells: 9 ; removed: 14 ; added: 5 ; confidential: 3"
+> 
+> 
+> # Create joint multi-resolution grid of organic UAA and total UAA
+> himg4 = multiResGrid(ifl3, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
++                      checkReliability = FALSE, suppresslim = 0.1)
+[1] "ires 2 5000 #himg-cells: 118 ; removed: 1192 ; added: 108 ; confidential: 10"
+[1] "ires 3 10000 #himg-cells: 40 ; removed: 111 ; added: 33 ; confidential: 6"
+[1] "ires 4 20000 #himg-cells: 18 ; removed: 33 ; added: 11 ; confidential: 6"
+[1] "ires 5 40000 #himg-cells: 9 ; removed: 14 ; added: 5 ; confidential: 3"
+> 
+> s3 = Sys.time()
+> 
+> 
+> # Create multi-resolution grid of UAA and organic UAA, based on survey data,
+> # also applying reliability check
+> himg5 <-  multiResGrid(fsl, vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
++                       strat = "STRA_ID_CORE", checkReliability = TRUE, reliabilitySplit = 5)
+Joining with `by = join_by(himgid)`
+[1] "df 320 213"
+[1] "df 306 213"
+[1] "df 304 213"
+[1] "df 327 213"
+[1] "df 290 214"
+[1] "ires 2 5000 #himg-cells: 116 ; removed: 1058 ; added: 108 ; confidential: 8"
+Joining with `by = join_by(himgid)`
+[1] "df 228 23"
+[1] "df 413 23"
+[1] "df 406 23"
+[1] "df 202 23"
+[1] "df 298 24"
+[1] "ires 3 10000 #himg-cells: 75 ; removed: 61 ; added: 20 ; confidential: 3"
+Joining with `by = join_by(himgid)`
+[1] "df 246 15"
+[1] "df 268 15"
+[1] "df 280 15"
+[1] "df 326 15"
+[1] "df 427 15"
+[1] "ires 4 20000 #himg-cells: 68 ; removed: 10 ; added: 3 ; confidential: 2"
+Joining with `by = join_by(himgid)`
+[1] "df 221 14"
+[1] "df 246 13"
+[1] "df 260 14"
+[1] "df 264 13"
+[1] "df 556 14"
+[1] "ires 5 40000 #himg-cells: 48 ; removed: 21 ; added: 1 ; confidential: 1"
+Joining with `by = join_by(himgid)`
+[1] "df 167 10"
+[1] "df 168 9"
+[1] "df 179 10"
+[1] "df 199 9"
+[1] "df 834 10"
+Warning messages:
+1: In FUN(newX[, i], ...) :
+  no non-missing arguments to max; returning -Inf
+2: In FUN(newX[, i], ...) :
+  no non-missing arguments to max; returning -Inf
+3: In FUN(newX[, i], ...) :
+  no non-missing arguments to max; returning -Inf
+4: In FUN(newX[, i], ...) :
+  no non-missing arguments to max; returning -Inf
+5: In FUN(newX[, i], ...) :
+  no non-missing arguments to max; returning -Inf
+6: In FUN(newX[, i], ...) :
+  no non-missing arguments to max; returning -Inf
+> summary(himg0)
+     count            countw          weight1            res       
+ Min.   : 10.00   Min.   : 10.00   Min.   :  6.00   Min.   : 5000  
+ 1st Qu.: 16.50   1st Qu.: 16.50   1st Qu.: 16.00   1st Qu.: 5000  
+ Median : 23.00   Median : 23.00   Median : 23.00   Median : 5000  
+ Mean   : 37.20   Mean   : 37.20   Mean   : 36.37   Mean   : 7549  
+ 3rd Qu.: 30.75   3rd Qu.: 30.75   3rd Qu.: 30.00   3rd Qu.:10000  
+ Max.   :491.00   Max.   :491.00   Max.   :491.00   Max.   :40000  
+ NA's   :1        NA's   :1                                        
+       ID                geometry 
+ Min.   : 1.0   POLYGON      :51  
+ 1st Qu.:13.5   epsg:3035    : 0  
+ Median :26.0   +proj=laea...: 0  
+ Mean   :26.0                     
+ 3rd Qu.:38.5                     
+ Max.   :51.0                     
+                                  
+> summary(himg1)
+     count            countw            UAA           weight1     
+ Min.   : 10.00   Min.   : 10.00   Min.   :  110   Min.   : 10.0  
+ 1st Qu.: 16.50   1st Qu.: 16.50   1st Qu.:  445   1st Qu.: 20.0  
+ Median : 23.00   Median : 23.00   Median :  875   Median : 20.0  
+ Mean   : 37.20   Mean   : 37.20   Mean   : 1748   Mean   : 36.6  
+ 3rd Qu.: 30.75   3rd Qu.: 30.75   3rd Qu.: 1760   3rd Qu.: 30.0  
+ Max.   :491.00   Max.   :491.00   Max.   :17960   Max.   :490.0  
+ NA's   :1        NA's   :1        NA's   :1       NA's   :1      
+      res              ID                geometry 
+ Min.   : 5000   Min.   : 1.0   POLYGON      :51  
+ 1st Qu.: 5000   1st Qu.:13.5   epsg:3035    : 0  
+ Median : 5000   Median :26.0   +proj=laea...: 0  
+ Mean   : 7549   Mean   :26.0                     
+ 3rd Qu.:10000   3rd Qu.:38.5                     
+ Max.   :40000   Max.   :51.0                     
+                                                  
+> summary(himg3)
+     count           countw           UAA        UAAXK0000_ORG     weight1     
+ Min.   : 16.0   Min.   : 16.0   Min.   :  940   Min.   :   0   Min.   : 20.0  
+ 1st Qu.:198.2   1st Qu.:198.2   1st Qu.:13705   1st Qu.:1485   1st Qu.:200.0  
+ Median :375.0   Median :375.0   Median :22750   Median :2255   Median :375.0  
+ Mean   :416.5   Mean   :416.5   Mean   :19182   Mean   :2132   Mean   :417.5  
+ 3rd Qu.:593.2   3rd Qu.:593.2   3rd Qu.:28228   3rd Qu.:2902   3rd Qu.:592.5  
+ Max.   :900.0   Max.   :900.0   Max.   :30290   Max.   :4020   Max.   :900.0  
+ NA's   :5       NA's   :5       NA's   :5       NA's   :5      NA's   :5      
+    weight2          res              ID             geometry
+ Min.   : 0.0   Min.   : 5000   Min.   :1   POLYGON      :9  
+ 1st Qu.:22.5   1st Qu.:10000   1st Qu.:3   epsg:3035    :0  
+ Median :40.0   Median :40000   Median :5   +proj=laea...:0  
+ Mean   :42.5   Mean   :26667   Mean   :5                    
+ 3rd Qu.:60.0   3rd Qu.:40000   3rd Qu.:7                    
+ Max.   :90.0   Max.   :40000   Max.   :9                    
+ NA's   :5                                                   
+> summary(himg4)
+     count           countw           UAA        UAAXK0000_ORG     weight1     
+ Min.   : 16.0   Min.   : 16.0   Min.   :  940   Min.   :   0   Min.   : 20.0  
+ 1st Qu.:198.2   1st Qu.:198.2   1st Qu.:13705   1st Qu.:1485   1st Qu.:200.0  
+ Median :375.0   Median :375.0   Median :22750   Median :2255   Median :375.0  
+ Mean   :416.5   Mean   :416.5   Mean   :19182   Mean   :2132   Mean   :417.5  
+ 3rd Qu.:593.2   3rd Qu.:593.2   3rd Qu.:28228   3rd Qu.:2902   3rd Qu.:592.5  
+ Max.   :900.0   Max.   :900.0   Max.   :30290   Max.   :4020   Max.   :900.0  
+ NA's   :5       NA's   :5       NA's   :5       NA's   :5      NA's   :5      
+    weight2          res              ID             geometry
+ Min.   : 0.0   Min.   : 5000   Min.   :1   POLYGON      :9  
+ 1st Qu.:22.5   1st Qu.:10000   1st Qu.:3   epsg:3035    :0  
+ Median :40.0   Median :40000   Median :5   +proj=laea...:0  
+ Mean   :42.5   Mean   :26667   Mean   :5                    
+ 3rd Qu.:60.0   3rd Qu.:40000   3rd Qu.:7                    
+ Max.   :90.0   Max.   :40000   Max.   :9                    
+ NA's   :5                                                   
+> summary(himg5)
+     count            countw            UAA           weight1      
+ Min.   : 10.00   Min.   : 11.59   Min.   :  110   Min.   : 10.00  
+ 1st Qu.: 14.50   1st Qu.: 17.18   1st Qu.:  400   1st Qu.: 20.00  
+ Median : 19.00   Median : 22.77   Median :  830   Median : 20.00  
+ Mean   : 32.83   Mean   : 39.62   Mean   : 1858   Mean   : 39.79  
+ 3rd Qu.: 25.00   3rd Qu.: 29.96   3rd Qu.: 1660   3rd Qu.: 30.00  
+ Max.   :417.00   Max.   :517.19   Max.   :18160   Max.   :520.00  
+ NA's   :1        NA's   :1        NA's   :1       NA's   :1       
+      res              ID                 geometry 
+ Min.   : 5000   Min.   : 1.00   POLYGON      :48  
+ 1st Qu.: 5000   1st Qu.:12.75   epsg:3035    : 0  
+ Median : 5000   Median :24.50   +proj=laea...: 0  
+ Mean   : 7604   Mean   :24.50                     
+ 3rd Qu.:10000   3rd Qu.:36.25                     
+ Max.   :40000   Max.   :48.00                     
+                                                   
+> s4 = Sys.time()
+> 
+> MRGobject = createMRGobject(ifg = ifg, ress = ress, var = "UAA")
+> himg1 = multiResGrid(MRGobject)
+[1] "ires 2 5000 #himg-cells: 118 ; removed: 1192 ; added: 108 ; confidential: 10"
+[1] "ires 3 10000 #himg-cells: 78 ; removed: 60 ; added: 20 ; confidential: 5"
+[1] "ires 4 20000 #himg-cells: 63 ; removed: 18 ; added: 3 ; confidential: 2"
+[1] "ires 5 40000 #himg-cells: 51 ; removed: 13 ; added: 1 ; confidential: 1"
+> # Parameters can be updated in the object or in the call to multiResGrid
+> MRGobject$suppresslim = 0.02
+> himg2 = multiResGrid(MRGobject)
+[1] "ires 2 5000 #himg-cells: 118 ; removed: 1192 ; added: 108 ; confidential: 10"
+[1] "ires 3 10000 #himg-cells: 87 ; removed: 48 ; added: 17 ; confidential: 9"
+[1] "ires 4 20000 #himg-cells: 77 ; removed: 12 ; added: 2 ; confidential: 7"
+> himg3 = multiResGrid(MRGobject, suppresslim = 0.05)
+[1] "ires 2 5000 #himg-cells: 118 ; removed: 1192 ; added: 108 ; confidential: 10"
+[1] "ires 3 10000 #himg-cells: 92 ; removed: 40 ; added: 14 ; confidential: 13"
+[1] "ires 4 20000 #himg-cells: 82 ; removed: 12 ; added: 2 ; confidential: 11"
+> summary(himg1)
+     count            countw            UAA           weight1     
+ Min.   : 10.00   Min.   : 10.00   Min.   :  110   Min.   : 10.0  
+ 1st Qu.: 16.50   1st Qu.: 16.50   1st Qu.:  445   1st Qu.: 20.0  
+ Median : 23.00   Median : 23.00   Median :  875   Median : 20.0  
+ Mean   : 37.20   Mean   : 37.20   Mean   : 1748   Mean   : 36.6  
+ 3rd Qu.: 30.75   3rd Qu.: 30.75   3rd Qu.: 1760   3rd Qu.: 30.0  
+ Max.   :491.00   Max.   :491.00   Max.   :17960   Max.   :490.0  
+ NA's   :1        NA's   :1        NA's   :1       NA's   :1      
+      res              ID                geometry 
+ Min.   : 5000   Min.   : 1.0   POLYGON      :51  
+ 1st Qu.: 5000   1st Qu.:13.5   epsg:3035    : 0  
+ Median : 5000   Median :26.0   +proj=laea...: 0  
+ Mean   : 7549   Mean   :26.0                     
+ 3rd Qu.:10000   3rd Qu.:38.5                     
+ Max.   :40000   Max.   :51.0                     
+                                                  
+> summary(himg2)
+     count            countw            UAA          weight1      
+ Min.   : 10.00   Min.   : 10.00   Min.   : 110   Min.   : 10.00  
+ 1st Qu.: 18.00   1st Qu.: 18.00   1st Qu.: 475   1st Qu.: 20.00  
+ Median : 22.00   Median : 22.00   Median : 800   Median : 20.00  
+ Mean   : 26.34   Mean   : 26.34   Mean   :1245   Mean   : 26.29  
+ 3rd Qu.: 28.00   3rd Qu.: 28.00   3rd Qu.:1452   3rd Qu.: 30.00  
+ Max.   :193.00   Max.   :193.00   Max.   :7310   Max.   :190.00  
+ NA's   :7        NA's   :7        NA's   :7      NA's   :7       
+      res              ID              geometry 
+ Min.   : 1000   Min.   : 1   POLYGON      :77  
+ 1st Qu.: 5000   1st Qu.:20   epsg:3035    : 0  
+ Median : 5000   Median :39   +proj=laea...: 0  
+ Mean   : 6156   Mean   :39                     
+ 3rd Qu.: 5000   3rd Qu.:58                     
+ Max.   :20000   Max.   :77                     
+                                                
+> summary(himg3)
+     count            countw            UAA          weight1      
+ Min.   : 10.00   Min.   : 10.00   Min.   : 110   Min.   : 10.00  
+ 1st Qu.: 16.50   1st Qu.: 16.50   1st Qu.: 465   1st Qu.: 20.00  
+ Median : 22.00   Median : 22.00   Median : 780   Median : 20.00  
+ Mean   : 25.73   Mean   : 25.73   Mean   :1227   Mean   : 25.77  
+ 3rd Qu.: 28.00   3rd Qu.: 28.00   3rd Qu.:1365   3rd Qu.: 30.00  
+ Max.   :193.00   Max.   :193.00   Max.   :7310   Max.   :190.00  
+ NA's   :11       NA's   :11       NA's   :11     NA's   :11      
+      res              ID                 geometry 
+ Min.   : 1000   Min.   : 1.00   POLYGON      :82  
+ 1st Qu.: 5000   1st Qu.:21.25   epsg:3035    : 0  
+ Median : 5000   Median :41.50   +proj=laea...: 0  
+ Mean   : 5805   Mean   :41.50                     
+ 3rd Qu.: 5000   3rd Qu.:61.75                     
+ Max.   :20000   Max.   :82.00                     
+                                                   
+> 
+> s5 = Sys.time()
+> ## IGNORE_RDIFF_BEGIN
+> s5-s4
+Time difference of 14.24114 secs
+> s4-s3
+Time difference of 43.15042 secs
+> s3-s2
+Time difference of 28.19311 secs
+> s2-s1
+Time difference of 26.17556 secs
+> 
+> s5-s1
+Time difference of 1.862671 mins
+> s4-s1
+Time difference of 1.625318 mins
+> s3-s1
+Time difference of 54.36867 secs
+> s2-s1
+Time difference of 26.17556 secs
+> ## IGNORE_RDIFF_END
+> 
+> proc.time()
+   user  system elapsed 
+110.390   1.888 112.279 

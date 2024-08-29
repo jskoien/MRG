@@ -1,8 +1,14 @@
 Package: MRG
 Type: Package
 Title: Functions to Create Non-Confidential Multi-Resolution Grids
-Version: 0.2.0
-Author: Jon Olav Skoien, Nicolas Lampach
+Version: 0.2.3
+Authors@R: c(person(given = c("Jon", "Olav"),
+                      family = "Skoien",
+                      role = c("aut", "cre"),
+                      email = "jon.skoien@gmail.com"),
+               person(given = "Nicolas",
+                      family = "Lampach",
+                      role = "aut"))
 Maintainer: Jon Olav Skoien <jon.skoien@gmail.com>
 Imports: magrittr, parallel, terra, sf, stars, plyr, dplyr, rlang, sjmisc, vardpoor, 
               purrr, tidyr, tidyselect, methods
@@ -15,6 +21,5 @@ Encoding: UTF-8
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2023-08-25 06:09:06 UTC; lampani
 Depends: R (>= 3.5.0)
 LazyData: true

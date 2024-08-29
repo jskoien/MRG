@@ -36,7 +36,10 @@ MRGpostProcess = function(himg, vars, remCols = TRUE, rounding = -1) {
   if (missing(remCols) & !is.null(attr(himg, "remCols"))) remCols = attr(himg, "remCols")
   if (missing(rounding) & !is.null(attr(himg, "rounding"))) rounding = attr(himg, "rounding")
   himg[himg$confidential, c("count", "countw")] = NA
-  if (!missing(vars) & !isFALSE(rounding)) {
+  if (!isFALSE(rounding)) {
+    himg[["count"]] = round(himg[["count"]], rounding)
+    himg[["countw"]] = round(himg[["countw"]], rounding)
+    if (!missing(vars)) {
     for (ivar in 1:length(vars)) {
       var = vars[ivar]
       himg[[var]][himg$confidential] = NA
@@ -44,6 +47,7 @@ MRGpostProcess = function(himg, vars, remCols = TRUE, rounding = -1) {
       himg[[var]] = round(himg[[var]], rounding)
       himg[[paste0("weight", ivar)]] = round(himg[[paste0("weight", ivar)]], rounding)
     }
+  }
   }
   #' @importFrom tidyselect matches
   matchrem = c("small", "reliability", "dom", "freq", "idcount", "idfail", "vres", "idRem", "confidential", "ufun" )

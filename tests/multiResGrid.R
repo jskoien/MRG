@@ -1,3 +1,4 @@
+s1 = Sys.time()
 library(MRG)
 library(sf)
 library(giscoR)
@@ -9,14 +10,21 @@ ifs_weight = ifs_dk %>% dplyr::filter(Sample == 1) # Extract weighted subsample
 # Create spatial data
 ifg = fssgeo(ifs_dk, locAdj = "LL")
 fsg = fssgeo(ifs_weight, locAdj = "LL")
-# Read country borders, only used for plotting
-borders = gisco_get_nuts(nuts_level = 0)
+# Read nuts borders, used for extracting smaller data set 
+borders = gisco_get_nuts(nuts_level = 2)
+
 dkb = borders[borders$CNTR_CODE == "DK",] %>% st_transform(crs = 3035)
+ifg$dkb = st_join(ifg, dkb)$NUTS_ID
+ifg = ifg[!is.na(ifg$dkb) & ifg$dkb == "DK01",]
+fsg$dkb = st_join(fsg, dkb)$NUTS_ID
+fsg = fsg[!is.na(fsg$dkb) & fsg$dkb == "DK01",]
+
+s2 = Sys.time()
 #'
 # Set the base resolutions, and create a hierarchical list with gridded data
-ress = c(1,5,10,20,40, 80, 160)*1000
+ress = c(1,5,10,20,40)*1000
 # Gridding Utilized agricultural area (UAA)
-ifl = gridData(ifg, "UAA",res = ress)
+ifl = gridData(ifg, "UAA", res = ress)
 
 # Gridding UAA and organic UAA together
 ifl3 = gridData(ifg, vars = c("UAA", "UAAXK0000_ORG"), res = ress)
@@ -40,17 +48,19 @@ himg3 = multiResGrid(ifl3, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg,
 himg4 = multiResGrid(ifl3, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
                      checkReliability = FALSE, suppresslim = 0.1)
 
+s3 = Sys.time()
+
+
 # Create multi-resolution grid of UAA and organic UAA, based on survey data,
 # also applying reliability check
-# Slow!
-himg5 = multiResGrid(fsl, vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
-                      strat = "STRA_ID_CORE", checkReliability = TRUE)
-
+himg5 <-  multiResGrid(fsl, vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
+                      strat = "STRA_ID_CORE", checkReliability = TRUE, reliabilitySplit = 5)
 summary(himg0)
 summary(himg1)
 summary(himg3)
 summary(himg4)
 summary(himg5)
+s4 = Sys.time()
 
 MRGobject = createMRGobject(ifg = ifg, ress = ress, var = "UAA")
 himg1 = multiResGrid(MRGobject)
@@ -62,4 +72,15 @@ summary(himg1)
 summary(himg2)
 summary(himg3)
 
+s5 = Sys.time()
+## IGNORE_RDIFF_BEGIN
+s5-s4
+s4-s3
+s3-s2
+s2-s1
 
+s5-s1
+s4-s1
+s3-s1
+s2-s1
+## IGNORE_RDIFF_END

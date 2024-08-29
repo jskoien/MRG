@@ -66,6 +66,7 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
   if (!inherits(ifg, "sf"))  ifg = fssgeo(ifg)
   ifg$count = 1
   #' @importFrom terra rast rasterize ext xFromCol yFromRow res values
+  #' @importFrom utils object.size
   if (length(res) > 1) {
     #' @importFrom dplyr lag
     rrat = res/lag(res, 1)

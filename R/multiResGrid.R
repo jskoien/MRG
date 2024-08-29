@@ -133,7 +133,6 @@
 #' borders = gisco_get_nuts(nuts_level = 0)
 #' dkb = borders[borders$CNTR_CODE == "DK",] %>% st_transform(crs = 3035)
 #'
-#' # Set the base resolutions, and create a hierarchical list with gridded data
 #' ress = c(1,5,10,20,40, 80, 160)*1000
 #' # Gridding Utilized agricultural area (UAA)
 #' ifl = gridData(ifg, "UAA",res = ress)
@@ -179,22 +178,25 @@
 #' # Slow!
 #' himg4 = multiResGrid(fsl,  vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
 #'                       strat = "STRA_ID_CORE", checkReliability = FALSE)
+#'# The parameter reliabilitySplit = 15 will divide the data set in 15 groups for the 
+#'# reliabilityCheck.
+#'# This is more than recommended, but speeds up the computation for this example
 #' himg5 = multiResGrid(fsl,  vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
-#'                       strat = "STRA_ID_CORE", checkReliability = TRUE)
+#'                       strat = "STRA_ID_CORE", checkReliability = TRUE, 
+#'                       reliabilitySplit = 15)
 #'                       
 #'# Apply suppreslim to suppress insignificant grid cells
 #'# Show intermediate maps of confidential cells (wait 5 seconds)
 #' pint = ifelse(interactive(), 5, FALSE)
-#' himg11 = multiResGrid(ifl, vars = "UAA", ifg = ifg, 
-#'                  suppresslim = 0, plotIntermediate = pint)
+#' #himg11 = multiResGrid(ifl, vars = "UAA", ifg = ifg, 
+#' #                  suppresslim = 0, plotIntermediate = pint)
+#' himg11 = himg1
 #' himg12 = multiResGrid(ifl, vars = "UAA", ifg = ifg, 
 #'                  suppresslim = 0.02, plotIntermediate = pint)
 #' himg13 = multiResGrid(ifl, vars = "UAA", ifg = ifg, 
 #'                  suppresslim = 0.05, plotIntermediate = pint)
 #' himg14 = multiResGrid(ifl, vars = "UAA", ifg = ifg, 
 #'                  suppresslim = 0.1, plotIntermediate = pint)
-#' himg15 = multiResGrid(ifl, vars = "UAA", ifg = ifg, 
-#'                  suppresslim = 0.2, plotIntermediate = pint)
 #'  
 #'  
 #'  # This is an example of a userfun that can be used for alternative restrictions
@@ -291,12 +293,12 @@
 #'   
 #'      
 #' # Plot the different maps from using different suppreslim values
-#' himgs = list(himg11, himg12, himg13, himg14, himg15)
+#' himgs = list(himg11, himg12, himg13, himg14)
 #' slims = c(0, 0.02, 0.05, 0.1, 0.2)
 #' plots = list()
-#' uaas = c(himg11$UAA, himg12$UAA, himg13$UAA, himg14$UAA, himg15$UAA)
+#' uaas = c(himg11$UAA, himg12$UAA, himg13$UAA, himg14$UAA)
 #' lims = range(uaas[uaas > 0], na.rm = TRUE)
-#' for (ii in 1:5) {
+#' for (ii in 1:4) {
 #'   himg = st_intersection(dkb, himgs[[ii]])
 #'   plots[[ii]] = 
 #'    ggplot() + geom_sf(data = himg, aes(fill = UAA), lwd = 0) +
@@ -307,7 +309,7 @@
 #'     theme_bw()
 #' }
 #' 
-#' plots[[1]]  + plots[[2]] + plots[[3]]  + plots[[4]] + plots[[5]] + plot_layout(guides = "collect")
+#' plots[[1]]  + plots[[2]] + plots[[3]]  + plots[[4]] + plot_layout(guides = "collect")
 #'  
 #' 
 #' }
