@@ -35,6 +35,10 @@
 #'        If the rule is that the largest two holdings in a grid cell should not count for more than 85%
 #'        of the total value (UAA, number of livestock, ...), then nlarge = 2 and plim = 0.85
 #'
+#'        The function will create set the value to NA for the grid cells where the 
+#'        content has been moved to a neighbouring grid cells.
+#'
+#' @returns A gridded data set, where each grid cell respects the confidentiality rules.
 #'
 #' @examples
 #' \donttest{

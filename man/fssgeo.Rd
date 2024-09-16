@@ -16,6 +16,9 @@ can either be FALSE, or "jitter" (adding a small random value to the coordinates
 them randomly around the real location), "UR", "UL", "LR" or "LL", to describe which corner of the grid 
 cell the location belong (upper right, upper left, lower right or lower left).}
 }
+\value{
+An \code{\link[sf]{sf}}-object with the locations of the survey or census data
+}
 \description{
 Function that creates an sf-object from IFS data
 }

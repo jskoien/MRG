@@ -127,8 +127,7 @@ of grid cells to be suppressed}
 \item{reliabilitySplit}{Logical or number - parameter to be used in
 calculation of the reliability (if checkReliability = TRUE). It can either give the 
 number of groups, or if TRUE, it will create groups of approdcimately 50,000 records per group. 
-If FALSE, the data set will not
-   be split independent on the size.}
+If FALSE, the data set will not be split, independent on the size.}
 
 \item{plotIntermediate}{Logical or number - make a simple plot showing which grid cells have already 
 passed the frequency rule. plotintermediate = TRUE, the function will wait 5 seconds after plotting 
@@ -152,6 +151,15 @@ of decimal places
 \item{remCols}{Logical; Should intermediate columns be removed? Can be set
 to FALSE for further analyses. Temporary columns will not be removed if their names 
 partly match the variable names of \code{vars}}
+}
+\value{
+The function will return a multi-resolution grid with observations
+gridded to different grid cell sizes according to the confidentiality rules
+to be applied. It can also include some additional columns that indicates 
+which of the different confidentiality rules that have been applied.
+
+Note that the function might (if \code{postProcess = FALSE})
+return values also for the confidential grid-cells.
 }
 \description{
 Two main confidentiality rules are considered:

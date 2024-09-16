@@ -9,6 +9,15 @@
 #' @eval MRGparam("confrules")
 #' @eval MRGparam("crsOut")
 #' @eval MRGparam("verbose")
+#' @param locAdj parameter to adjust the coordinates if they are exactly on the borders between grid cells. The values
+#'               can either be FALSE, 
+#'               or \"jitter\" (adding a small random value to the coordinates, essentially spreading 
+#'               them randomly around the real location), 
+#'              \"UR\", \"UL\", \"LR\" or \"LL\", to describe which corner of the grid 
+#'              cell the location belong (upper right, upper left, lower right or lower left).
+#'              Please use with care in this function. It will make it possible to produce the grid,but notice 
+#'              that the coordinates of \code{ifg}
+#'              will be left untouched, which can cause problems if this is used in other functions.
 #' 
 #' 
 #' @details This will create hierarchical grids of the selected variable(s), at the requested resolution(s),
@@ -18,6 +27,11 @@
 #'          
 #'          Additionally, the function will always return the extrapolated number of farms per grid unit.
 #'          The result will either be a set of sf-polygons (default) or a stars object.
+#'
+#' @returns A hierarchical list of gridded data, in the different resolutions requested.
+#' Each grid also includes the count of records used for the gridding, and the
+#' sum of the weights.
+#'
 #'
 #' @examples
 #' \donttest{
@@ -60,10 +74,10 @@
 #'
 #' @export
 gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,  
-                   nclus = 1, confrules = "individual", crsOut = 3035, verbose = FALSE) {
+                   nclus = 1, confrules = "individual", crsOut = 3035, verbose = FALSE, locAdj = FALSE) {
   
   if ( !length(weights) %in% c(0,1,length(vars))) stop(paste("The length of weight should be 0,1 or equal to the length of vars"))
-  if (!inherits(ifg, "sf"))  ifg = fssgeo(ifg)
+  if (!inherits(ifg, "sf"))  ifg = fssgeo(ifg, crsOut = crsOut, locAdj = locAdj)
   ifg$count = 1
   #' @importFrom terra rast rasterize ext xFromCol yFromRow res values
   #' @importFrom utils object.size

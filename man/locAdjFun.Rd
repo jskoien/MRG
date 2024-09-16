@@ -18,6 +18,10 @@ cell the location belong (upper right, upper left, lower right or lower left).}
 
 \item{ress}{A vector with the different resolutions}
 }
+\value{
+An \code{\link[sf]{sf}}-object with slightly modified locations for the 
+survey or census data, according to the \code{locAdj}-parameter
+}
 \description{
 Function that modifies the observation locations, to reduce the risk that 
 they are on grid cell boundaries

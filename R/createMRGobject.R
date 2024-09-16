@@ -34,7 +34,18 @@
 #' @eval MRGparam("remCols")
 #' @eval MRGparam("locAdj")
 #' @eval MRGparam("ellipsis")
-
+#' 
+#' 
+#' @details The function creates a single object, containing both 
+#' the mapped data and the parameters for for further processing.
+#' This assures that all processing is done with the same variables.
+#' 
+#' 
+#' @returns A list containing the necessary elements for further processing 
+#' with the \code{MRG}-package.
+#' 
+#' 
+#' 
 #' 
 #' @examples
 #' \donttest{

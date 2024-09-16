@@ -10,6 +10,8 @@
 #' This function splits the attribute in its individual parts, and creates an
 #' sf-object with the correct coordinates and CRS.
 #'
+#' @returns An \code{\link[sf]{sf}}-object with the locations of the survey or census data
+#'
 #' @examples
 #' data(ifs_dk)
 #' ifg = fssgeo(ifs_dk)

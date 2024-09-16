@@ -22,6 +22,11 @@ of decimal places
  value rounding to the closest 10). See also the details
  for \code{digits} in \code{\link{round}}.}
 }
+\value{
+The function will return a post-processed multi-resolution grid
+with non-confidential gridded data. See \code{\link{multiResGrid}} for more 
+information.
+}
 \description{
 Make some final adjustments to the multiresolution grids
 }

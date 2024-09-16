@@ -12,6 +12,10 @@
 #' @param clusType The type of cluster; see \code{\link[parallel]{makeCluster}} for more details.
 #'         The default of makeCluster is used if type is missing or NA.
 #' @param  outfile File to direct the output, \code{\link[parallel]{makeCluster}} for more details.
+#' 
+#' @returns The function will either return a cluster for parallel computation,
+#' or stop a cluster (returning NULL)
+#' 
 #' @export
 MRGcluster = function(nclus, ..., action = "start", clusType, outfile = NULL ) {
   cl = getOption("MRGcluster")

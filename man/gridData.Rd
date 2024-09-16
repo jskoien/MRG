@@ -12,7 +12,8 @@ gridData(
   nclus = 1,
   confrules = "individual",
   crsOut = 3035,
-  verbose = FALSE
+  verbose = FALSE,
+  locAdj = FALSE
 )
 }
 \arguments{
@@ -42,6 +43,21 @@ the data set ("total")?}
 \item{crsOut}{The coordinate reference system (crs) to be used}
 
 \item{verbose}{indicates if some extra output should be printed}
+
+\item{locAdj}{parameter to adjust the coordinates if they are exactly on the borders between grid cells. The values
+ can either be FALSE, 
+ or \"jitter\" (adding a small random value to the coordinates, essentially spreading 
+ them randomly around the real location), 
+\"UR\", \"UL\", \"LR\" or \"LL\", to describe which corner of the grid 
+cell the location belong (upper right, upper left, lower right or lower left).
+Please use with care in this function. It will make it possible to produce the grid,but notice 
+that the coordinates of \code{ifg}
+will be left untouched, which can cause problems if this is used in other functions.}
+}
+\value{
+A hierarchical list of gridded data, in the different resolutions requested.
+Each grid also includes the count of records used for the gridding, and the
+sum of the weights.
 }
 \description{
 Function that converts point data to gridded data  (polygon values) or a list of gridded data

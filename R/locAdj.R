@@ -15,6 +15,8 @@
 #' In the case of FSS data, the coordinates have been reported as the lower left
 #' corner of a 1 km grid.  
 #' 
+#' @returns An \code{\link[sf]{sf}}-object with slightly modified locations for the 
+#' survey or census data, according to the \code{locAdj}-parameter  
 #' 
 #' @examples
 #' data(ifs_dk)

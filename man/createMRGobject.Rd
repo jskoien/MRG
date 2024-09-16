@@ -126,8 +126,7 @@ of grid cells to be suppressed}
 \item{reliabilitySplit}{Logical or number - parameter to be used in
 calculation of the reliability (if checkReliability = TRUE). It can either give the 
 number of groups, or if TRUE, it will create groups of approdcimately 50,000 records per group. 
-If FALSE, the data set will not
-   be split independent on the size.}
+If FALSE, the data set will not be split, independent on the size.}
 
 \item{plotIntermediate}{Logical or number - make a simple plot showing which grid cells have already 
 passed the frequency rule. plotintermediate = TRUE, the function will wait 5 seconds after plotting 
@@ -159,8 +158,17 @@ partly match the variable names of \code{vars}}
 
 \item{...}{Possible arguments to userfun or other internal functions}
 }
+\value{
+A list containing the necessary elements for further processing 
+with the \code{MRG}-package.
+}
 \description{
 Create a single object containing all necessary objects for multiResGrid functions
+}
+\details{
+The function creates a single object, containing both 
+the mapped data and the parameters for for further processing.
+This assures that all processing is done with the same variables.
 }
 \examples{
 \donttest{

@@ -114,6 +114,15 @@
 #'        A simple example of a \code{userfun} is given in the example section below (the one producing \code{himg6})
 #'        
 #'
+#'
+#' @returns The function will return a multi-resolution grid with observations
+#' gridded to different grid cell sizes according to the confidentiality rules
+#' to be applied. It can also include some additional columns that indicates 
+#' which of the different confidentiality rules that have been applied.
+#' 
+#' Note that the function might (if \code{postProcess = FALSE})
+#' return values also for the confidential grid-cells. 
+#'
 #' @examples
 #' \donttest{
 #' library(sf)
@@ -175,15 +184,17 @@
 #' 
 #' # Create multi-resolution grid of UAA, based on survey data,
 #' # with and without applying reliability check
-#' # Slow!
+#' # This is a relatively slow functionality
+#' # rounding is set to FALSE, to be better able to visualize the few records
+#' # (Not recommended for data to be published)
 #' himg4 = multiResGrid(fsl,  vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
-#'                       strat = "STRA_ID_CORE", checkReliability = FALSE)
+#'                       strat = "STRA_ID_CORE", checkReliability = FALSE, rounding = FALSE)
 #'# The parameter reliabilitySplit = 15 will divide the data set in 15 groups for the 
 #'# reliabilityCheck.
 #'# This is more than recommended, but speeds up the computation for this example
 #' himg5 = multiResGrid(fsl,  vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
 #'                       strat = "STRA_ID_CORE", checkReliability = TRUE, 
-#'                       reliabilitySplit = 15)
+#'                       reliabilitySplit = 15, rounding = FALSE)
 #'                       
 #'# Apply suppreslim to suppress insignificant grid cells
 #'# Show intermediate maps of confidential cells (wait 5 seconds)
@@ -536,11 +547,11 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
       if (!missing(vars) && !is.null(vars)){
         for (ivar in 1:length(vars)){
           vestres = mrg_varestim(ifg, var = paste0("gridvar", ivar), strat = "strat", PSU = "ID", 
-                                 weight = paste0("weight", ivar), split = reliabilitySplit)
+                                 weight = paste0("weight", ivar), split = reliabilitySplit, verbose = verbose)
           himg[,paste0("vres",ivar)] = vestres$rse
         }
       }
-      nonvalids = which(apply(st_drop_geometry(himg[, grep("vres", names(himg))]), 1, max, na.rm = TRUE) > 0.35)
+      nonvalids = suppressWarnings(which(apply(st_drop_geometry(himg[, grep("vres", names(himg))]), 1, max, na.rm = TRUE) > 0.35))
       himg$reliability[nonvalids] = TRUE
     }
     
@@ -615,7 +626,7 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
 
 
 
-mrg_varestim <- function(x, var, strat, PSU, weight, split){
+mrg_varestim <- function(x, var, strat, PSU, weight, split, verbose){
   ID = n = hld = w_sum = NULL
   if (inherits(x, "sf")) x = st_drop_geometry(x)
   if (!missing(PSU)) x$ID = x[[PSU]]  
@@ -634,11 +645,14 @@ mrg_varestim <- function(x, var, strat, PSU, weight, split){
     himgid <- unique(x$himgid)    
     #' @importFrom dplyr left_join mutate ungroup group_by distinct case_when n
     #' @importFrom sjmisc split_var 
-    df_cl <- left_join(x, data.frame(himgid = himgid, cluster = split_var(himgid, n = split)))
+    df_cl <- left_join(x, data.frame(himgid = himgid, cluster = split_var(himgid, n = split)), by = "himgid")
     out_var <- NULL
     for (isp in 1:split){
       df = x[which(df_cl$cluster == isp),]
-      print(paste("df", paste(dim(df)[1], length(unique(df$himgid)))))
+      if (verbose) print(paste("reliabilitySplit: ", isp, 
+                               "- Number of records: ", paste(dim(df)[1], 
+                               " - Number of unique IDs: ", length(unique(df$himgid)))))
+      if (FALSE) {
       t <- df %>% group_by(ID, strat, himgid) %>% 
         summarise(hld=n(), w_sum = sum(.data[[weight]], na.rm = T)) %>% 
         filter(hld == 1 & w_sum > 1) %>% ungroup
@@ -646,6 +660,15 @@ mrg_varestim <- function(x, var, strat, PSU, weight, split){
         h_st <- t %>% distinct(ID) %>% pull()
         df <- df %>% mutate(strat = case_when(ID %in% c(h_st)~99999,
                                               T ~ strat))}
+      } else {
+        t <- df %>% group_by(strat) %>% 
+          summarise(hld=n(), w_sum = sum(.data[[weight]], na.rm = T)) %>% 
+          filter(hld == 1 & w_sum > 1) %>% ungroup
+        if (!is.null(t)){
+          h_st <- t %>% distinct(strat) %>% pull()
+          df <- df %>% mutate(strat = case_when(strat %in% c(h_st)~99999,
+                                                T ~ strat))}
+      }
       #' @importFrom vardpoor vardom
       est <- vardom(dataset = df, Y= var, H = "strat",
                     PSU = "ID",

@@ -1,6 +1,7 @@
 s1 = Sys.time()
 library(MRG)
-library(sf)
+# Neccessary to silence sf startup messages
+suppressMessages(library(sf))
 library(giscoR)
 #'
 # These are SYNTHETIC agricultural FSS data 
@@ -55,11 +56,14 @@ s3 = Sys.time()
 # also applying reliability check
 himg5 <-  multiResGrid(fsl, vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
                       strat = "STRA_ID_CORE", checkReliability = TRUE, reliabilitySplit = 5)
-summary(himg0)
-summary(himg1)
-summary(himg3)
-summary(himg4)
-summary(himg5)
+summary(himg0, digits = 5)
+summary(himg1, digits = 5)
+# To avoid FAQ 7.31 problem in summary - mean(himg3$UAA) = 19182.5 is not consistently rounded to 19182 or 19183 
+himg3$UAA = himg3$UAA + 0.001
+summary(himg3, digits = 5)
+himg4$UAA = himg4$UAA + 0.001
+summary(himg4, digits = 5)
+summary(himg5, digits = 5)
 s4 = Sys.time()
 
 MRGobject = createMRGobject(ifg = ifg, ress = ress, var = "UAA")
@@ -68,9 +72,9 @@ himg1 = multiResGrid(MRGobject)
 MRGobject$suppresslim = 0.02
 himg2 = multiResGrid(MRGobject)
 himg3 = multiResGrid(MRGobject, suppresslim = 0.05)
-summary(himg1)
-summary(himg2)
-summary(himg3)
+summary(himg1,digits = 5)
+summary(himg2, digits = 5)
+summary(himg3, digits = 5)
 
 s5 = Sys.time()
 ## IGNORE_RDIFF_BEGIN

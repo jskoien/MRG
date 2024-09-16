@@ -72,6 +72,9 @@ see \code{\link[parallel]{makeCluster}} for more details.}
 \item{checkReliability}{Logical - should the prediction variance be checked, and used for the aggregation?
 This considerably increases computation time}
 }
+\value{
+A gridded data set, where each grid cell respects the confidentiality rules.
+}
 \description{
 Two main confidentiality rules are considered:
 - Threshold rule (suppression due to a minimum number of counts)
@@ -85,6 +88,9 @@ This function uses the hierarchy of gridded data to associate values
        The parameters nlarge and plim are used for setting value dependent confidentiality rules.
        If the rule is that the largest two holdings in a grid cell should not count for more than 85%
        of the total value (UAA, number of livestock, ...), then nlarge = 2 and plim = 0.85
+
+       The function will create set the value to NA for the grid cells where the 
+       content has been moved to a neighbouring grid cells.
 }
 \examples{
 \donttest{

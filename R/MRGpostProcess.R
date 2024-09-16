@@ -12,6 +12,10 @@
 #' \code{\link{multiResGrid}} can be called with the argument \code{postProcess = FALSE}, 
 #' and the post processing be done separately.
 #'
+#' @returns The function will return a post-processed multi-resolution grid
+#' with non-confidential gridded data. See \code{\link{multiResGrid}} for more 
+#' information.
+#'
 #' @examples
 #' \donttest{
 #' library(sf)
@@ -33,10 +37,10 @@
 #' @export
 MRGpostProcess = function(himg, vars, remCols = TRUE, rounding = -1) {
   if (missing(vars) & !is.null(attr(himg, "vars"))) vars = attr(himg, "vars")
-  if (missing(remCols) & !is.null(attr(himg, "remCols"))) remCols = attr(himg, "remCols")
-  if (missing(rounding) & !is.null(attr(himg, "rounding"))) rounding = attr(himg, "rounding")
+  if (missing(remCols) & !is.null(attr(himg, "remCols")) && !isFALSE(attr(himg, "remCols"))) remCols = attr(himg, "remCols")
+  if (missing(rounding) & !is.null(attr(himg, "rounding"))  && !isFALSE(attr(himg, "rounding"))) rounding = attr(himg, "rounding")
   himg[himg$confidential, c("count", "countw")] = NA
-  if (!isFALSE(rounding)) {
+  if (!isFALSE(rounding) & !is.null(rounding)) {
     himg[["count"]] = round(himg[["count"]], rounding)
     himg[["countw"]] = round(himg[["countw"]], rounding)
     if (!missing(vars)) {
