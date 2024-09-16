@@ -50,6 +50,11 @@ MRGparam = function(par) {
                checkDominance = "@param checkDominance Logical - should the dominance rule be applied?",
                checkReliability = "@param checkReliability Logical - should the prediction variance be checked, and used for the aggregation?
                          This considerably increases computation time",
+               pseudoreg = "@param pseudoreg A column with regions to be used to define pseudostrata if checkReliability is TRUE.
+                            This is used for the cases when one or more strata only has a single record (and the weight is 
+                            different from one). This makes variance calculation impossible, so such strata are 
+                            merged into a pseudostrata. If pseudoreg is given (for example a column with the country name,
+                            or NUTS2 region), the pseudostrata will be created separately for each pseudoreg region.", 
                userfun = "@param userfun This gives the possibility to add a user defined function with additional confidentiality rules which 
                              the grid cell has to pass", 
               fargs = "@param fargs The name of the necessary variables of userfun", 

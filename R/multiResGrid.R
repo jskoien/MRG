@@ -26,6 +26,7 @@
 #' @eval MRGparam("outfile")
 #' @eval MRGparam("checkDominance")
 #' @eval MRGparam("checkReliability")
+#' @eval MRGparam("pseudoreg")
 #' @eval MRGparam("userfun")
 #' @eval MRGparam("strat")
 #' @eval MRGparam("confrules")
@@ -355,7 +356,7 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
                               outfile = NULL, checkDominance = TRUE,
                               checkReliability = FALSE, userfun, strat = NULL, confrules = "individual", 
                               suppresslim = 0, sumsmall = FALSE, suppresslimSum = NULL,
-                              reliabilitySplit = TRUE,
+                              reliabilitySplit = TRUE, pseudoreg = NULL,
                               plotIntermediate = FALSE,  addIntermediate = FALSE,
                               postProcess = TRUE, rounding = -1, remCols = TRUE, ...) {
   #  To avoid R CMD check notes
@@ -367,7 +368,11 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
       if (!"strat" %in% names(ifg)) ifg$strat = 1  
       #' @importFrom dplyr mutate group_by
     } else ifg = ifg %>% mutate(strat = .data[[strat]])
+    if (missing(pseudoreg) | is.null(pseudoreg)) {
+      if (!"pseudoreg" %in% names(ifg)) ifg$pseudoreg = 1
+    } else ifg = ifg %>% mutate(pseudoreg = .data[[pseudoreg]])
   }
+  
   if (!missing(vars)) {
     if (missing(ifg))
       stop(paste("Cannot create values for variable(s) ",
@@ -380,7 +385,7 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
     ifg = addweights(ifg, vars, weights)
     wts = paste0("weight", 1:length(vars))
     if (checkReliability) {
-      ifg = ifg[, c("ID", paste0("gridvar", 1:length(vars)), paste0("weight", 1:length(vars)), "strat")]
+      ifg = ifg[, c("ID", paste0("gridvar", 1:length(vars)), paste0("weight", 1:length(vars)), "strat", "pseudoreg")]
     } else {
       ifg = ifg[, c("ID", paste0("gridvar", 1:length(vars)), paste0("weight", 1:length(vars)))]
     }
@@ -547,7 +552,8 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
       if (!missing(vars) && !is.null(vars)){
         for (ivar in 1:length(vars)){
           vestres = mrg_varestim(ifg, var = paste0("gridvar", ivar), strat = "strat", PSU = "ID", 
-                                 weight = paste0("weight", ivar), split = reliabilitySplit, verbose = verbose)
+                                 weight = paste0("weight", ivar), split = reliabilitySplit, pseudoreg = "pseudoreg", 
+                                 verbose = verbose)
           himg[,paste0("vres",ivar)] = vestres$rse
         }
       }
@@ -626,7 +632,7 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
 
 
 
-mrg_varestim <- function(x, var, strat, PSU, weight, split, verbose){
+mrg_varestim <- function(x, var, strat, PSU, weight, split, pseudoreg, verbose){
   ID = n = hld = w_sum = NULL
   if (inherits(x, "sf")) x = st_drop_geometry(x)
   if (!missing(PSU)) x$ID = x[[PSU]]  
@@ -664,9 +670,10 @@ mrg_varestim <- function(x, var, strat, PSU, weight, split, verbose){
         t <- df %>% group_by(strat) %>% 
           summarise(hld=n(), w_sum = sum(.data[[weight]], na.rm = T)) %>% 
           filter(hld == 1 & w_sum > 1) %>% ungroup
+        if (!is.null(pseudoreg)) pcor = as.numeric(as.factor(df[[pseudoreg]])) else pcor = 0
         if (!is.null(t)){
           h_st <- t %>% distinct(strat) %>% pull()
-          df <- df %>% mutate(strat = case_when(strat %in% c(h_st)~99999,
+          df <- df %>% mutate(strat = case_when(strat %in% c(h_st)~(99999-pcor),
                                                 T ~ strat))}
       }
       #' @importFrom vardpoor vardom

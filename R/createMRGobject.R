@@ -81,7 +81,7 @@ createMRGobject = function(ifg, ress = c(1,5,10,20,40)*1000,
                            domEstat = TRUE, consistencyCheck = FALSE, outfile = NULL, splitlim = 50000000,
                            checkDominance = TRUE, checkReliability = FALSE, userfun = NULL, strat = NULL,
                            confrules = "individual", suppresslim = 0, sumsmall = FALSE, suppresslimSum = 0,
-                           reliabilitySplit = TRUE, plotIntermediate = FALSE, addIntermediate = FALSE, 
+                           reliabilitySplit = TRUE, pseudoreg = NULL, plotIntermediate = FALSE, addIntermediate = FALSE, 
                            locAdj = "LL", 
                            postProcess = TRUE,
                            rounding = -1, remCols = TRUE, ...) {
@@ -113,7 +113,7 @@ createMRGobject = function(ifg, ress = c(1,5,10,20,40)*1000,
                                  userfun = userfun, strat = strat, confrules = confrules, suppresslim = suppresslim,
                                  sumsmall= sumsmall, suppresslimSum = suppresslimSum, 
                                  plotIntermediate = plotIntermediate, addIntermeidate = addIntermediate, 
-                                 reliabilitySplit = reliabilitySplit,
+                                 reliabilitySplit = reliabilitySplit, pseudoreg = pseudoreg,
                                  locAdj = locAdj, postProcess = postProcess, rounding = rounding, 
                                  remCols = remCols)
 
