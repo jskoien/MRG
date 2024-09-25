@@ -1,7 +1,7 @@
 Package: MRG
 Type: Package
 Title: Create Non-Confidential Multi-Resolution Grids
-Version: 0.2.16
+Version: 0.2.17
 Authors@R: c(person(given = c("Jon", "Olav"),
                       family = "Skoien",
                       role = c("aut", "cre"),
