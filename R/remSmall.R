@@ -43,19 +43,30 @@
 #' @examples
 #' \donttest{
 #' library(sf)
-#' library(viridis)
-#' library(ggplot2)
-#' library(patchwork)
-#' library(giscoR)
-#'
+#' library(sf)
+#' if (!require(ggplot2)) print("Plotting of results will not work without installation of ggplot2")
+#' if (!require(viridis)) print("Some of the plots will not work without installation of ggplot2")
+#' if (!require(patchwork)) print("Some of the plots will not work without installation of patchwork")
+#' 
+#' if (require(giscoR)) {
+#'   useBorder = TRUE 
+#' } else {
+#'   useBorder = FALSE
+#'   print("You need to install giscoR for plotting borders and clipping the gridded maps")
+#' }
 #' # These are SYNTHETIC agricultural FSS data 
 #' data(ifs_dk) # Census data
+#' ifs_weight = ifs_dk %>% dplyr::filter(Sample == 1) # Extract weighted subsample
 #' 
 #' # Create spatial data
 #' ifg = fssgeo(ifs_dk, locAdj = "LL")
+#' fsg = fssgeo(ifs_weight, locAdj = "LL")
+#' 
+#' if (useBorder) {
 #' # Read country borders, only used for plotting
-#' borders = gisco_get_nuts(nuts_level = 0)
-#' dkb = borders[borders$CNTR_CODE == "DK",] %>% st_transform(crs = 3035)
+#'   borders = gisco_get_nuts(nuts_level = 0)
+#'   dkb = borders[borders$CNTR_CODE == "DK",] %>% st_transform(crs = 3035)
+#' }
 #'
 #' # Set the base resolutions, and create a hierarchical list with gridded data
 #' ress = c(1,5,10,20,40,80, 160, 320, 640, 1280, 2560)*1000

@@ -3,8 +3,11 @@ MRGparam = function(par) {
 
   ret = switch(par,
                MRGobject = "@param MRGobject An object including all
-                 the necessary variables and parameters, from a call to createMRGobject",
-               gdl = "@param gdl A list of gridded data - with different resolutions",
+                 the necessary variables and parameters, from a call to \\code{\\link{createMRGobject}}",
+               gdl = "@param gdl A list of gridded data with different resolutions (from a call to \\code{\\link{gridData}}",
+               MRGinp = "@param MRGinp Either an MRGobject (from a call to \\code{\\link{createMRGobject}}) or
+                           a list of gridded data with different resolutions (from a call to \\code{\\link{gridData}} or
+                           a gridded sf-object (typically from an earlier call to \\code{multiResGrid}",
               himg = "@param himg The grid resulting from a call to multiResGrid",
                ifs = "@param ifs A data.frame or tibble with the locations and the data of the survey or census data" ,
                crsOut = "@param crsOut The coordinate reference system (crs) to be used ",
@@ -103,7 +106,7 @@ MRGparam = function(par) {
                        to be used. Negative values are allowed (such as the default
                        value rounding to the closest 10). See also the details
                        for \\code{digits} in \\code{\\link{round}}.",
-              ellipsis = "@param ... Possible arguments to userfun or other internal functions"
+              ellipsis = "@param ... Possible arguments to underlying functions"
               
 )
 ret

@@ -3,7 +3,7 @@
 \docType{data}
 \name{ifs_dk}
 \alias{ifs_dk}
-\title{Test data sets for the multiResGrid package}
+\title{Test data sets for the MRG package}
 \format{
 A data frame with 37,088 rows and 14 variables
 \itemize{

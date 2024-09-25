@@ -1,4 +1,4 @@
-#' Test data sets for the multiResGrid package
+#' Test data sets for the MRG package
 #' 
 #' 
 #' Synthetic data set of Danish farming data, similar to the 

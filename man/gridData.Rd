@@ -74,17 +74,25 @@ This will create hierarchical grids of the selected variable(s), at the requeste
 \examples{
 \donttest{
 library(sf)
-library(viridis)
-library(ggplot2)
-library(giscoR)
+if (!require(ggplot2)) print("Plotting of results will not work without installation of ggplot2")
+if (!require(viridis)) print("Some of the plots will not work without installation of ggplot2")
+if (require(giscoR)) {
+  useBorder = TRUE 
+} else {
+  useBorder = FALSE
+  print("You need to install giscoR for plotting borders and clipping the gridded maps")
+}
 
 # These are SYNTHETIC agricultural FSS data 
 data(ifs_dk) # Census data
 # Create spatial data
 ifg = fssgeo(ifs_dk, locAdj = "LL")
+
+if (useBorder) {
 # Read country borders, only used for plotting
-borders = gisco_get_nuts(nuts_level = 0)
-dkb = borders[borders$CNTR_CODE == "DK",] \%>\% st_transform(crs = 3035)
+  borders = gisco_get_nuts(nuts_level = 0)
+  dkb = borders[borders$CNTR_CODE == "DK",] \%>\% st_transform(crs = 3035)
+}
 
 ress = c(1,5,10,20,40,80)*1000
 ifl = gridData(ifg, vars = c("UAA", "UAAXK0000_ORG"), weights = "EXT_CORE", 
@@ -94,14 +102,15 @@ ifl2 = gridData(ifg, vars = c("UAA", "UAAXK0000_ORG"), weights = "EXT_CORE",
 all.equal(ifl, ifl2)
 if (require(ggplot2)) {
 ifall = do.call("rbind", ifl)
-ggplot() + geom_sf(data = ifall, aes(fill = count, color = count)) +
+g1 = ggplot() + geom_sf(data = ifall, aes(fill = count, color = count)) +
  scale_fill_viridis( name = "number of \n holdings", trans = "log10") +
  scale_color_viridis( name = "number of \n holdings", trans = "log10") +
- geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) +
  coord_sf(crs = 3035) +
  theme_bw() +
  ggtitle("Number of holdings for different resolutions") +
  facet_wrap(vars(res))
+ if (useBorder) g1 = g1 + geom_sf(data = dkb, fill = NA, colour='black', lwd = 1)
+ g1
 }
 #'
 

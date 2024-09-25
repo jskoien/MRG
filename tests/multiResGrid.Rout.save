@@ -89,10 +89,31 @@ Type 'q()' to quit R.
 > # also applying reliability check
 > himg5 <-  multiResGrid(fsl, vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
 +                       strat = "STRA_ID_CORE", checkReliability = TRUE, reliabilitySplit = 5)
+[1] "5 of the subsets included strata with only one record. \n You might want to check the strata or consider a lower value for reliabilitySplit."
 [1] "ires 2 5000 #himg-cells: 116 ; removed: 1058 ; added: 108 ; confidential: 8"
-[1] "ires 3 10000 #himg-cells: 75 ; removed: 61 ; added: 20 ; confidential: 3"
-[1] "ires 4 20000 #himg-cells: 68 ; removed: 10 ; added: 3 ; confidential: 2"
-[1] "ires 5 40000 #himg-cells: 48 ; removed: 21 ; added: 1 ; confidential: 1"
+[1] "Current variance estimation"
+[1] "There are strata, where n_h == 1 and f_h <> 1"
+[1] "Not possible to estimate the variance in these strata!"
+[1] "At these strata estimation of variance was not calculated"
+Key: <strat>
+    strat      N_h   n_h      f_h
+   <char>    <num> <int>    <num>
+1:  99998 3.185556     1 0.313917
+[1] "Variance of HT estimator under current design"
+[1] "There are strata, where n_h == 1 and f_h <> 1"
+[1] "Not possible to estimate the variance in these strata!"
+[1] "At these strata estimation of variance was not calculated"
+Key: <strat>
+    strat      N_h   n_h      f_h
+   <char>    <num> <int>    <num>
+1:  99998 3.185556     1 0.313917
+[1] "5 of the subsets included strata with only one record. \n You might want to check the strata or consider a lower value for reliabilitySplit."
+[1] "ires 3 10000 #himg-cells: 72 ; removed: 65 ; added: 21 ; confidential: 3"
+[1] "5 of the subsets included strata with only one record. \n You might want to check the strata or consider a lower value for reliabilitySplit."
+[1] "ires 4 20000 #himg-cells: 65 ; removed: 10 ; added: 3 ; confidential: 2"
+[1] "5 of the subsets included strata with only one record. \n You might want to check the strata or consider a lower value for reliabilitySplit."
+[1] "ires 5 40000 #himg-cells: 48 ; removed: 18 ; added: 1 ; confidential: 1"
+[1] "5 of the subsets included strata with only one record. \n You might want to check the strata or consider a lower value for reliabilitySplit."
 > summary(himg0, digits = 5)
      count           countw         weight1             res       
  Min.   : 10.0   Min.   : 10.0   Min.   :  6.000   Min.   : 5000  

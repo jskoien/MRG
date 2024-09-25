@@ -7,9 +7,7 @@
 #' - Threshold rule (suppression due to a minimum number of counts)
 #' - Dominance rule (suppression due to dominance by one or more units)
 #'
-#' @eval MRGparam("MRGobject")
-#' @eval MRGparam("gdl")
-#' @eval MRGparam("himg")
+#' @eval MRGparam("MRGinp")
 #' @eval MRGparam("mincount")
 #' @eval MRGparam("nlarge")
 #' @eval MRGparam("plim")
@@ -76,7 +74,22 @@
 #'        possible stratified sampling approaches. The number is zero if all holdings in the population in 
 #'        a grid cell has been sampled, and the default requirement is that the CV is less than 35%.
 #'        
-
+#'        The computation can be time and memory intensive, particularly for the first iteration. 
+#'        The method involves creation (and inversion) of a matrix of
+#'        size \code{nr*ng}, where \code{nr} is the number of records and \code{ng} is the number of grid cells.
+#'        it is therefore sometimes necessary to split the data set into smaller parts, to reduce
+#'        the computational challenges. The parameter \code{reliabilitySplit} is used for this. 
+#'        It will split the area of interest into several subsets. This will have some impact
+#'        on the reliability calculations. The \code{reliabilitySplit} value might be set temporarily
+#'        higher for the first iterations, as it will also depend on the number of grid cells.
+#'        
+#'        Reliability cannot be calculated for records belonging to strata with only one record.
+#'        The function will therefore attempt to merge these into pseudostrata, if there is more than one 
+#'        of these strata. The \code{pseudoreg}-parameter can be used
+#'        to define the regions within which the pseudostrata are created (for example NUTS2-region).
+#'        If there are still strata with only one record, these will cause a printed warning.
+#'        
+#'        
 #'        There are some cases where aggregation might not be desired. In the situation where a 
 #'        relatively large single grid cell does not respect the confidentiality rules, it is fine to 
 #'        aggregate it if the neighbouring grid cells are also relatively large. However, it can be seen
@@ -127,11 +140,16 @@
 #' @examples
 #' \donttest{
 #' library(sf)
-#' library(viridis)
-#' library(ggplot2)
-#' library(patchwork)
-#' library(giscoR)
-#'
+#' if (!require(ggplot2)) print("Plotting of results will not work without installation of ggplot2")
+#' if (!require(viridis)) print("Some of the plots will not work without installation of ggplot2")
+#' if (!require(patchwork)) print("Some of the plots will not work without installation of patchwork")
+#' 
+#' if (require(giscoR)) {
+#'   useBorder = TRUE 
+#' } else {
+#'   useBorder = FALSE
+#'   print("You need to install giscoR for plotting borders and clipping the gridded maps")
+#' }
 #' # These are SYNTHETIC agricultural FSS data 
 #' data(ifs_dk) # Census data
 #' ifs_weight = ifs_dk %>% dplyr::filter(Sample == 1) # Extract weighted subsample
@@ -139,9 +157,12 @@
 #' # Create spatial data
 #' ifg = fssgeo(ifs_dk, locAdj = "LL")
 #' fsg = fssgeo(ifs_weight, locAdj = "LL")
+#' 
+#' if (useBorder) {
 #' # Read country borders, only used for plotting
-#' borders = gisco_get_nuts(nuts_level = 0)
-#' dkb = borders[borders$CNTR_CODE == "DK",] %>% st_transform(crs = 3035)
+#'   borders = gisco_get_nuts(nuts_level = 0)
+#'   dkb = borders[borders$CNTR_CODE == "DK",] %>% st_transform(crs = 3035)
+#' }
 #'
 #' ress = c(1,5,10,20,40, 80, 160)*1000
 #' # Gridding Utilized agricultural area (UAA)
@@ -161,8 +182,8 @@
 #' 
 #' # Create a multi-resolution grid of UAA, also based on the dominance rule (default)
 #' himg1 = multiResGrid(ifl, vars = "UAA", ifg = ifg)
-#' p1 = ggplot(himg1) + geom_sf(aes(fill = UAA))
-#' p1
+#'   p1 = ggplot(himg1) + geom_sf(aes(fill = UAA))
+#'   p1
 #' # Create multi-resolution grid of organic UAA
 #' himg2 = multiResGrid(ifl2, vars = "UAAXK0000_ORG", ifg = ifg)
 #' himg21 = multiResGrid(ifl2, vars = "UAAXK0000_ORG", ifg = ifg, postProcess = FALSE)
@@ -192,7 +213,7 @@
 #'                       strat = "STRA_ID_CORE", checkReliability = FALSE, rounding = FALSE)
 #'# The parameter reliabilitySplit = 15 will divide the data set in 15 groups for the 
 #'# reliabilityCheck.
-#'# This is more than recommended, but speeds up the computation for this example
+#'# A lower value would be recommended, but a high value speeds up the computation for this example
 #' himg5 = multiResGrid(fsl,  vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
 #'                       strat = "STRA_ID_CORE", checkReliability = TRUE, 
 #'                       reliabilitySplit = 15, rounding = FALSE)
@@ -223,45 +244,48 @@
 #'  
 #'  
 #'  
-#' himg00 = st_intersection(dkb, himg0)
-#' ggplot() + geom_sf(data = himg00, aes(fill = count, color = count)) +
+#' if (useBorder) himg00 = st_intersection(dkb, himg0) else himg00 = himg0
+#' p00 = ggplot() + geom_sf(data = himg00, aes(fill = count, color = count)) +
 #'   scale_fill_viridis( name = "number of farms", trans = "log10") +
 #'   scale_color_viridis( name = "number of farms", trans = "log10") +
-#'   geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) +
 #'   coord_sf(crs = 3035) +#, xlim = c(2377294, 6400000), ylim = c(1313597, 5628510)) +
 #'   ggtitle("Number of farms for variable grid cell size, only frequency confidentiality") +
 #'   theme_bw()
-#'  
-#' himg01 = st_intersection(dkb, himg1)
-#' ggplot() + geom_sf(data = himg01, aes(fill = count, color = count)) +
+#' if (useBorder) p00 = p00 + geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) 
+#' p00
+#'   
+#' if (useBorder) himg01 = st_intersection(dkb, himg1) else himg01 = himg1
+#' p01 = ggplot() + geom_sf(data = himg01, aes(fill = count, color = count)) +
 #'   scale_fill_viridis( name = "number of farms", trans = "log10") +
 #'   scale_color_viridis( name = "number of farms", trans = "log10") +
-#'   geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) +
 #'   coord_sf(crs = 3035) +#, xlim = c(2377294, 6400000), ylim = c(1313597, 5628510)) +
 #'   ggtitle("Number of farms for variable grid cell size, frequency and dominance confidentiality") +
 #'   theme_bw()
-#' 
+#' if (useBorder) p01 = p01 + geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) 
+#' p01
 #'   
 #' # Plot the density of organic agriculture, as hectares per square km
-#' himg02 = st_intersection(dkb, himg2)
+#' if (useBorder)himg02 = st_intersection(dkb, himg2) else himg02 = himg2
 #' himg02$orgarea = himg02$UAAXK0000_ORG/units::set_units(st_area(himg02), "km^2")
 #' units(himg02$orgarea) = NULL
-#' ggplot() + geom_sf(data = himg02, aes(fill = orgarea), lwd = 0) +
+#' p02 = ggplot() + geom_sf(data = himg02, aes(fill = orgarea), lwd = 0) +
 #'   scale_fill_viridis( name = "ha / km2") +
-#'   geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) +
 #'   coord_sf(crs = 3035) +#, xlim = c(2377294, 6400000), ylim = c(1313597, 5628510)) +
 #'   ggtitle("Organic UAA density")  +
 #'   theme_bw()
+#' if (useBorder) p02 = p02 + geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) 
+#' p02
 #' 
 #' # Plot the relative abundance of organic UAA relative to total UAA
-#' himg03 = st_intersection(dkb, himg3)
+#' if (useBorder) himg03 = st_intersection(dkb, himg3) else himg03 = himg3
 #' himg03$ouaashare = himg03$UAAXK0000_ORG/himg03$UAA*100
-#' ggplot() + geom_sf(data = himg03, aes(fill = ouaashare), lwd = 0) +
+#' p03 = ggplot() + geom_sf(data = himg03, aes(fill = ouaashare), lwd = 0) +
 #'   scale_fill_viridis( name = "% Organic") +
-#'   geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) +
 #'   coord_sf(crs = 3035) +#, xlim = c(2377294, 6400000), ylim = c(1313597, 5628510)) +
 #'   ggtitle("Organic share")  +
 #'   theme_bw()
+#' if (useBorder) p03 = p03 + geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) 
+#' p03
 #'   
 #'   
 #' # Plot maps from survey data before and after adding the reliability constraint 
@@ -269,7 +293,7 @@
 #' # of the administration building, but the map without reliability check has too high values 
 #' # for too many cells
 #' 
-#' himg04 = st_intersection(dkb, himg4)
+#' if (useBorder) himg04 = st_intersection(dkb, himg4)
 #' himg04$area = st_area(himg04)/1e6
 #' units(himg04$area) = NULL
 #' himg04$uaashare = himg04$UAA/himg04$area
@@ -280,28 +304,31 @@
 #'   coord_sf(crs = 3035) +#, xlim = c(2377294, 6400000), ylim = c(1313597, 5628510)) +
 #'   ggtitle("UAA share (sample without reliability check)")  +
 #'   theme_bw()
+#' if (useBorder) p04 = p04 + geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) 
+#' p04
 #'   
-#' himg05 = st_intersection(dkb, himg5)
+#' if (useBorder) himg05 = st_intersection(dkb, himg5) else himg05 = himg5
 #' himg05$area = st_area(himg05)/1e6
 #' units(himg05$area) = NULL
 #' himg05$uaashare = himg05$UAA/himg05$area
 #' himg05$uaashare[himg05$uaashare > 1000] = 1000
 #' g5 = ggplot() + geom_sf(data = himg05, aes(fill = uaashare), lwd = 0) +
 #'   scale_fill_viridis( name = "% UAA",  trans = "log10", limits = c(1,1000)) +
-#'   geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) +
 #'   coord_sf(crs = 3035) +#, xlim = c(2377294, 6400000), ylim = c(1313597, 5628510)) +
 #'   ggtitle("UAA share (sample with reliability check)")  +
 #'   theme_bw()
+#' if (useBorder) g5 = g5 + geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) 
 #'   
-#'g4 + g5 + plot_layout(guides = "collect")
+#' if (require(patchwork)) g4 + g5 + plot_layout(guides = "collect")
 #'   
-#' himg06 = st_intersection(dkb, himg6)
-#' ggplot() + geom_sf(data = himg06, aes(fill = UAA), lwd = 0) +
+#' if (useBorder) himg06 = st_intersection(dkb, himg6) else himg06 = himg6
+#' p06 = ggplot() + geom_sf(data = himg06, aes(fill = UAA), lwd = 0) +
 #'   scale_fill_viridis( name = "ha") +
-#'   geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) +
 #'   coord_sf(crs = 3035) +#, xlim = c(2377294, 6400000), ylim = c(1313597, 5628510)) +
 #'   ggtitle("UAA, with additional user defined function")  +
 #'   theme_bw()
+#' if (useBorder) p06 = p06 + geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) 
+#' p06
 #'   
 #'      
 #' # Plot the different maps from using different suppreslim values
@@ -311,38 +338,45 @@
 #' uaas = c(himg11$UAA, himg12$UAA, himg13$UAA, himg14$UAA)
 #' lims = range(uaas[uaas > 0], na.rm = TRUE)
 #' for (ii in 1:4) {
-#'   himg = st_intersection(dkb, himgs[[ii]])
+#'   if (useBorder) himg = st_intersection(dkb, himgs[[ii]]) else himg = himgs[[ii]]
 #'   plots[[ii]] = 
 #'    ggplot() + geom_sf(data = himg, aes(fill = UAA), lwd = 0) +
 #'     scale_fill_viridis( name = "UAA (ha)", trans = "log10", limits = lims, na.value="red") +
-#'     geom_sf(data = dkb, fill = NA, colour='black', lwd = 0.5) +
 #'     ggtitle(paste("Suppresslim = ", slims[[ii]])) +
 #'     xlab("") + ylab("") +
 #'     theme_bw()
+#'    if (useBorder) plots[[ii]] = plots[[ii]] + 
+#'                      geom_sf(data = dkb, fill = NA, colour='black', lwd = 0.5)
 #' }
 #' 
-#' plots[[1]]  + plots[[2]] + plots[[3]]  + plots[[4]] + plot_layout(guides = "collect")
+#' if (require(patchwork)) plots[[1]]  + plots[[2]] + plots[[3]]  + plots[[4]] + 
+#'                               plot_layout(guides = "collect")
 #'  
 #' 
 #' }
 #' 
+#' #' @rdname multiResGrid
+#' @export
+multiResGrid  <- function(MRGinp, ...) UseMethod("multiResGrid")
+#' 
 #' 
 #' @rdname multiResGrid
 #' @export
-multiResGrid.MRG <- function(MRGobject, ...) {
+multiResGrid.MRG <- function(MRGinp, ...) {
   dots = list(...)
   #' @importFrom utils modifyList
-  if (length(dots) > 0) MRGobject = modifyList(MRGobject, dots)
-  do.call(multiResGrid, MRGobject)
+  if (length(dots) > 0) MRGinp = modifyList(MRGinp, dots)
+  do.call(multiResGrid, MRGinp)
 }
 #'
 #' @rdname multiResGrid
 #' @export
-multiResGrid.data.frame <- function(himg, ...) {
-  dots = list(...)
+multiResGrid.sf <- function(MRGinp, ..., ifg, vars) {
+  if (missing(ifg) | missing(vars)) stop("Both ifg and vars (as named variables) are necessary for the data.frame method of multiResGrid")
+  dots = c(list(...), list(ifg = ifg, vars = vars))
   #' @importFrom utils modifyList
-  MRGobject = list(list(gdl = himg))
-  if (length(dots) > 0) MRGobject = modifyList(MRGobject, dots)
+  MRGobject = list(list(MRGinp = MRGinp))
+  MRGobject = modifyList(MRGobject, dots)
   do.call(multiResGrid, MRGobject)
 }
 #' 
@@ -350,7 +384,7 @@ multiResGrid.data.frame <- function(himg, ...) {
 #' 
 #' @rdname multiResGrid
 #' @export
-multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "feature", mincount = 10, #minpos = 4, 
+multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = "feature", mincount = 10, #minpos = 4, 
                               nlarge = 2,
                               plim = 0.85, verbose = FALSE, nclus = 1, clusType, domEstat = TRUE, 
                               outfile = NULL, checkDominance = TRUE,
@@ -362,7 +396,7 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
   #  To avoid R CMD check notes
   hsum = wsum = www = small = weight = data = himgid = dominance = . = NULL
   if (!missing(ifg) && !inherits(ifg, "sf")) stop("ifg is not an sf-object ")
-  if (length(gdl) > 1) ress = unlist(lapply(gdl, FUN = function(gdll) gdll$res[1])) else ress = 0
+  if (length(MRGinp) > 1) ress = unlist(lapply(MRGinp, FUN = function(MRGinpl) MRGinpl$res[1])) else ress = 0
   if (checkReliability) {
     if (missing(strat) | is.null(strat) ) {
       if (!"strat" %in% names(ifg)) ifg$strat = 1  
@@ -390,13 +424,13 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
       ifg = ifg[, c("ID", paste0("gridvar", 1:length(vars)), paste0("weight", 1:length(vars)))]
     }
   } 
-  if (length(gdl) == 1) {
+  if (length(MRGinp) == 1) {
     loh = NULL
-    gdl = gdl[[1]]   
-    if (!"ID" %in% names(gdl)) gdl$ID = 1:dim(gdl)[1]
+    MRGinp = MRGinp[[1]]   
+    if (!"ID" %in% names(MRGinp)) MRGinp$ID = 1:dim(MRGinp)[1]
     if (!"ID" %in% names(ifg)) ifg$ID = 1:dim(ifg)[1]
-    ifg = ifg %>% mutate(himgid = st_join(., gdl, join = st_within)$ID.y) 
-    himg = gdl[, c("ID", "res")]
+    ifg = ifg %>% mutate(himgid = st_join(., MRGinp, join = st_within)$ID.y) 
+    himg = MRGinp[, c("ID", "res")]
     #' @importFrom dplyr summarize count
     himg = himg %>% mutate(count = st_drop_geometry(ifg) %>% group_by(himgid) %>% summarize(count = n()) %>% select(count) %>% pull)
     
@@ -412,11 +446,11 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
         #' @importFrom rlang :=
         if (!is.null(ww) & ww != 1) ifg$wsum = (st_drop_geometry(ifg[,vv]) %>% pull)*(st_drop_geometry(ifg[,ww]) %>% pull) else ifg$gridvar = st_drop_geometry(ifg[,vv]) %>% pull
         himg = himg %>% mutate(!!vvv := st_drop_geometry(ifg) %>% group_by(himgid)  %>% summarize(vvv = sum(wsum)) %>% select(vvv) %>% pull) %>%
-                        mutate(!!ww  := st_drop_geometry(ifg) %>% group_by(himgid)  %>% summarize(www = sum(.data[[ww]])) %>% select(www) %>% pull)
+          mutate(!!ww  := st_drop_geometry(ifg) %>% group_by(himgid)  %>% summarize(www = sum(.data[[ww]])) %>% select(www) %>% pull)
       }
     }
   } else {
-    himg = gdl[[1]]   
+    himg = MRGinp[[1]]   
     if (missing(vars)) vvars = NULL else vvars = vars
     if (missing(weights) || is.null(weights) || weights == 1) wweights = NULL else wweights = weights
     hcols = which(names(himg)  %in% c("ID", "res", "count", "countw", "geometry", vvars, wweights, paste0("weight", 1:100)))
@@ -430,11 +464,11 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
   for (ires in 2:(length(ress) + 1)) {
     lres = ress[ires]
     if (ires <= length(ress)) {
-      limg = gdl[[ires]] 
+      limg = MRGinp[[ires]] 
       lcols = which(names(limg)  %in% c("ID", "res", "count", "countw", "geometry", vvars, wweights, paste0("weight", 1:100)))
       limg = limg[,lcols]
       limg = limg %>% mutate(confidential = FALSE, reliability = FALSE, small = FALSE,
-                 freq = FALSE, dom = FALSE, ufun = FALSE)
+                             freq = FALSE, dom = FALSE, ufun = FALSE)
       
       if (!missing(vars)) for (ivar in 1:length(vars)) limg[,paste0("vres", ivar)] = 0
     }    
@@ -545,16 +579,17 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
     }
     
     if (checkReliability) {
+      rsplit = reliabilitySplit
       if (reliabilitySplit & (dim(ifg)[1] > 50000 | dim(himg)[1] > 1000)) {
-        if (is.logical(reliabilitySplit)) reliabilitySplit = dim(ifg)[1] %/% 30000
-        if (dim(himg)[1] > reliabilitySplit*1000) reliabilitySplit = dim(himg)[1] %/% 1000
+        if (is.logical(reliabilitySplit)) rsplit = dim(ifg)[1] %/% 30000
+        if (dim(himg)[1] > rsplit*1000) rsplit = dim(himg)[1] %/% 1000
       }
       if (!missing(vars) && !is.null(vars)){
         for (ivar in 1:length(vars)){
           vestres = mrg_varestim(ifg, var = paste0("gridvar", ivar), strat = "strat", PSU = "ID", 
                                  weight = paste0("weight", ivar), split = reliabilitySplit, pseudoreg = "pseudoreg", 
                                  verbose = verbose)
-          himg[,paste0("vres",ivar)] = vestres$rse
+          himg[,paste0("vres",ivar)] = vestres
         }
       }
       nonvalids = suppressWarnings(which(apply(st_drop_geometry(himg[, grep("vres", names(himg))]), 1, max, na.rm = TRUE) > 0.35))
@@ -603,7 +638,7 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
     lohs[[ires]] = loh
     
     if (ires <= length(ress)) print(paste("ires", ires, ress[ires], "#himg-cells:", dim(himg)[1], "; removed:", 
-                length(idRem), "; added:", length(idAdd), "; confidential:", sum(himg$confidential) ))
+                                          length(idRem), "; added:", length(idAdd), "; confidential:", sum(himg$confidential) ))
     if (plotIntermediate) {
       plot(himg[, "confidential"], main = "Confidential cells")
       Sys.sleep(ifelse(is.logical(plotIntermediate), 5, plotIntermediate))
@@ -633,14 +668,22 @@ multiResGrid.list <- function(gdl, ifg, vars, weights, countFeatureOrTotal = "fe
 
 
 mrg_varestim <- function(x, var, strat, PSU, weight, split, pseudoreg, verbose){
-  ID = n = hld = w_sum = NULL
+  ID = n = hld = w_sum = wdiff = NULL
   if (inherits(x, "sf")) x = st_drop_geometry(x)
   if (!missing(PSU)) x$ID = x[[PSU]]  
+  icor = 0
   if (missing(strat) || is.null(strat)) {
     x$strat = 1
   } else {
     if (!strat %in% names(x)) stop(paste(strat, "is missing from from the data.frame"))
     x$strat = x[[strat]]  
+  }
+  
+  # Check if any grid cells only have unit value weights
+  tt = st_drop_geometry(x) %>% group_by(himgid) %>% 
+    summarise(wdiff = sum(abs(.data[[weight]] - 1), na.rm = T)) %>% filter(wdiff < 0.1)
+  if (dim(tt)[1] > 0) {
+    x = x[!(x$himgid %in% tt$himgid), ]
   }
   if (split == 1) {
     df = x
@@ -657,25 +700,17 @@ mrg_varestim <- function(x, var, strat, PSU, weight, split, pseudoreg, verbose){
       df = x[which(df_cl$cluster == isp),]
       if (verbose) print(paste("reliabilitySplit: ", isp, 
                                "- Number of records: ", paste(dim(df)[1], 
-                               " - Number of unique IDs: ", length(unique(df$himgid)))))
-      if (FALSE) {
-      t <- df %>% group_by(ID, strat, himgid) %>% 
-        summarise(hld=n(), w_sum = sum(.data[[weight]], na.rm = T)) %>% 
-        filter(hld == 1 & w_sum > 1) %>% ungroup
-      if (!is.null(t)){
-        h_st <- t %>% distinct(ID) %>% pull()
-        df <- df %>% mutate(strat = case_when(ID %in% c(h_st)~99999,
-                                              T ~ strat))}
-      } else {
+                                                              " - Number of unique IDs: ", length(unique(df$himgid)))))
+
+        icor = icor + 1
         t <- df %>% group_by(strat) %>% 
           summarise(hld=n(), w_sum = sum(.data[[weight]], na.rm = T)) %>% 
           filter(hld == 1 & w_sum > 1) %>% ungroup
         if (!is.null(pseudoreg)) pcor = as.numeric(as.factor(df[[pseudoreg]])) else pcor = 0
-        if (!is.null(t)){
+        if (dim(t)[1] > 0){
           h_st <- t %>% distinct(strat) %>% pull()
           df <- df %>% mutate(strat = case_when(strat %in% c(h_st)~(99999-pcor),
                                                 T ~ strat))}
-      }
       #' @importFrom vardpoor vardom
       est <- vardom(dataset = df, Y= var, H = "strat",
                     PSU = "ID",
@@ -683,9 +718,14 @@ mrg_varestim <- function(x, var, strat, PSU, weight, split, pseudoreg, verbose){
       out_var<-rbind(out_var, est$all_result)
     }
   }
+  if (icor > 0) {
+    print(paste(icor, "of the subsets included strata with only one record. \n",
+                "You might want to check the strata or consider a lower value for reliabilitySplit."))
+  }
   out_var$himgid = as.numeric(out_var$himgid)
+  if (dim(tt)[1] > 0) out_var = rbind(out_var[,c("himgid", "rse")], data.frame(himgid = tt$himgid, rse = 0))
   out_var = out_var[order(out_var$himgid),]
-  out_var
+  out_var$rse
 }
 
 
