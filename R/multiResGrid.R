@@ -216,7 +216,7 @@
 #'# A lower value would be recommended, but a high value speeds up the computation for this example
 #' himg5 = multiResGrid(fsl,  vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
 #'                       strat = "STRA_ID_CORE", checkReliability = TRUE, 
-#'                       reliabilitySplit = 15, rounding = FALSE)
+#'                       reliabilitySplit = 15, rounding = FALSE, pseudoreg = "REGIONS")
 #'                       
 #'# Apply suppreslim to suppress insignificant grid cells
 #'# Show intermediate maps of confidential cells (wait 5 seconds)
@@ -706,7 +706,7 @@ mrg_varestim <- function(x, var, strat, PSU, weight, split, pseudoreg, verbose){
         t <- df %>% group_by(strat) %>% 
           summarise(hld=n(), w_sum = sum(.data[[weight]], na.rm = T)) %>% 
           filter(hld == 1 & w_sum > 1) %>% ungroup
-        if (!is.null(pseudoreg)) pcor = as.numeric(as.factor(df[[pseudoreg]])) else pcor = 0
+        if (!is.null(pseudoreg)) pcor = as.numeric(as.factor(df$pseudoreg)) else pcor = 0
         if (dim(t)[1] > 0){
           h_st <- t %>% distinct(strat) %>% pull()
           df <- df %>% mutate(strat = case_when(strat %in% c(h_st)~(99999-pcor),
