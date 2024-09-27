@@ -338,7 +338,7 @@ himg4 = multiResGrid(fsl,  vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg,
 # A lower value would be recommended, but a high value speeds up the computation for this example
 himg5 = multiResGrid(fsl,  vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
                       strat = "STRA_ID_CORE", checkReliability = TRUE, 
-                      reliabilitySplit = 15, rounding = FALSE)
+                      reliabilitySplit = 15, rounding = FALSE, pseudoreg = "REGIONS")
                       
 # Apply suppreslim to suppress insignificant grid cells
 # Show intermediate maps of confidential cells (wait 5 seconds)
@@ -356,7 +356,7 @@ himg14 = multiResGrid(ifl, vars = "UAA", ifg = ifg,
  
  # This is an example of a userfun that can be used for alternative restrictions
  # for a grid cell. This particular toy example assures that there are at least
- # nabove records with a value (UAA in this case) above limit. 
+ # \\code{nabove} records with a value (UAA in this case) above a certain "limit". 
  ufun = function(df, nabove, limit) {
    sum(df$gridvar > limit) < nabove
  }

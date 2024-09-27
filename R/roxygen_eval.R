@@ -66,8 +66,8 @@ MRGparam = function(par) {
                            a value of the individual vars above zero (\"individual\") or the total number of holdings in 
                            the data set (\"total\")? ",
                suppresslim = "@param suppresslim Parameter that can be used to avoid that almost empty grid cells are merged with cells 
-                            with considerably higher number of observations. The value is a minimum percentage of the total
-                            potential new cell for a grid cell to be aggregated.",  
+                            with considerably higher number of observations. The value is a minimum share of the total
+                            potential new cell for a grid cell to be aggregated. See below for more details.",  
                sumsmall = "@param sumsmall Logical; should the suppresslimSum value be applied on the sum of
                             small grid cells within the lower resolution grid cell?
                             Note that different combinations of suppreslim and suppreslimSum values 

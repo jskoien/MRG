@@ -99,7 +99,7 @@
 #'        lower resolution. The parameter \code{suppresslim} indicates the minimum value in a grid cell 
 #'        relative to the possible lower resolution grid cell 
 #'        before it is necessary to aggregate. If the limit is 0.05, a grid cell would only cause an aggregation
-#'        to lower resolution if the value in the grid cell is more than 5% of the value in the lower resolution 
+#'        to lower resolution if the value in the grid cell is more than 5\% of the value in the lower resolution 
 #'        grid cell. Instead, it would be left as it is, and will be suppressed in the post-processing step.
 #'
 #'        There are cases when the built-in confidentiality checks are not what the user needs. 
@@ -234,7 +234,7 @@
 #'  
 #'  # This is an example of a userfun that can be used for alternative restrictions
 #'  # for a grid cell. This particular toy example assures that there are at least
-#'  # nabove records with a value (UAA in this case) above limit. 
+#'  # \\code{nabove} records with a value (UAA in this case) above a certain "limit". 
 #'  ufun = function(df, nabove, limit) {
 #'    sum(df$gridvar > limit) < nabove
 #'  }
@@ -586,9 +586,10 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
       }
       if (!missing(vars) && !is.null(vars)){
         for (ivar in 1:length(vars)){
+          nhimg = dim(himg)[1]
           vestres = mrg_varestim(ifg, var = paste0("gridvar", ivar), strat = "strat", PSU = "ID", 
                                  weight = paste0("weight", ivar), split = reliabilitySplit, pseudoreg = "pseudoreg", 
-                                 verbose = verbose)
+                                 verbose = verbose, nhimg = nhimg)
           himg[,paste0("vres",ivar)] = vestres
         }
       }
@@ -667,8 +668,10 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
 
 
 
-mrg_varestim <- function(x, var, strat, PSU, weight, split, pseudoreg, verbose){
+mrg_varestim <- function(x, var, strat, PSU, weight, split, verbose, pseudoreg, nhimg){
   ID = n = hld = w_sum = wdiff = NULL
+  nx = dim(x)[1]
+  himgids = unique(x$himgid)
   if (inherits(x, "sf")) x = st_drop_geometry(x)
   if (!missing(PSU)) x$ID = x[[PSU]]  
   icor = 0
@@ -685,6 +688,9 @@ mrg_varestim <- function(x, var, strat, PSU, weight, split, pseudoreg, verbose){
   if (dim(tt)[1] > 0) {
     x = x[!(x$himgid %in% tt$himgid), ]
   }
+  if (dim(x)[1] == 0) {
+    out_var = data.frame(himgid = himgids, rse = 0)
+  } else {
   if (split == 1) {
     df = x
     out_var = vardom(dataset = df, Y= var, H = "strat",
@@ -706,7 +712,7 @@ mrg_varestim <- function(x, var, strat, PSU, weight, split, pseudoreg, verbose){
         t <- df %>% group_by(strat) %>% 
           summarise(hld=n(), w_sum = sum(.data[[weight]], na.rm = T)) %>% 
           filter(hld == 1 & w_sum > 1) %>% ungroup
-        if (!is.null(pseudoreg)) pcor = as.numeric(as.factor(df$pseudoreg)) else pcor = 0
+        if (!is.null(pseudoreg)) pcor = as.numeric(as.factor(df[[pseudoreg]])) else pcor = 0
         if (dim(t)[1] > 0){
           h_st <- t %>% distinct(strat) %>% pull()
           df <- df %>% mutate(strat = case_when(strat %in% c(h_st)~(99999-pcor),
@@ -725,6 +731,9 @@ mrg_varestim <- function(x, var, strat, PSU, weight, split, pseudoreg, verbose){
   out_var$himgid = as.numeric(out_var$himgid)
   if (dim(tt)[1] > 0) out_var = rbind(out_var[,c("himgid", "rse")], data.frame(himgid = tt$himgid, rse = 0))
   out_var = out_var[order(out_var$himgid),]
+  }
+  if (!missing(nhimg) && nhimg != dim(out_var)[1]) stop("The dimension of out_var does not match the dimension of himg")
+  if (sum(duplicated(out_var$himgid)) > 0) stop("There are duplicated himgids in out_var")
   out_var$rse
 }
 
