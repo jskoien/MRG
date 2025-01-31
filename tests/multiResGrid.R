@@ -20,15 +20,14 @@ ifg = ifg[!is.na(ifg$dkb) & ifg$dkb == "DK01",]
 fsg$dkb = st_join(fsg, dkb)$NUTS_ID
 fsg = fsg[!is.na(fsg$dkb) & fsg$dkb == "DK01",]
 
+ifg$ft = as.numeric(substr(ifg$FARMTYPE, 3, 4))^2
+
 s2 = Sys.time()
 #'
 # Set the base resolutions, and create a hierarchical list with gridded data
 ress = c(1,5,10,20,40)*1000
-# Gridding Utilized agricultural area (UAA)
-ifl = gridData(ifg, "UAA", res = ress)
-
-# Gridding UAA and organic UAA together
-ifl3 = gridData(ifg, vars = c("UAA", "UAAXK0000_ORG"), res = ress)
+# Gridding Utilized agricultural area (UAA), organic UAA and ft together
+ifl = gridData(ifg, c("UAA", "UAAXK0000_ORG", "ft"), res = ress)
 
 # Gridding the UAA from the survey - the survey weights are in the column EXT_MODULE
 fsl = gridData(fsg,  vars = c("UAA"), weights = "EXT_MODULE",  res = ress)
@@ -39,15 +38,27 @@ himg0 = multiResGrid(ifl, checkReliability = FALSE, suppresslim = 0)
 # Create a multi-resolution grid of UAA, also based on the dominance rule (default)
 himg1 = multiResGrid(ifl, vars = "UAA", ifg = ifg)
 
+# Create joint multi-resolution grid of organic UAA
+himg2 = multiResGrid(ifl, vars = "UAAXK0000_ORG", ifg = ifg, 
+                     checkReliability = FALSE, suppresslim = 0)
 
 # Create joint multi-resolution grid of organic UAA and total UAA
-himg3 = multiResGrid(ifl3, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
+himg3 = multiResGrid(ifl, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
                   checkReliability = FALSE, suppresslim = 0)
 
 
-# Create joint multi-resolution grid of organic UAA and total UAA
-himg4 = multiResGrid(ifl3, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
+# Create joint multi-resolution grid of organic UAA and total UAA, with suppression
+himg4 = multiResGrid(ifl, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
                      checkReliability = FALSE, suppresslim = 0.1)
+
+# Create joint multi-resolution grid of ft
+himg5 = multiResGrid(ifl, vars = c("ft"), ifg = ifg, 
+                     checkReliability = FALSE, suppresslim = 0.1)
+
+himg6 = multiResGrid(ifl, vars = c("UAA", "UAAXK0000_ORG", "ft"), ifg = ifg, 
+                     checkReliability = FALSE, suppresslim = 0.1)
+
+himg7 = MRGmerge(himg1, himg2, himg3 = himg5)
 
 s3 = Sys.time()
 

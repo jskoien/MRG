@@ -1,7 +1,7 @@
 #' Test data sets for the MRG package
 #' 
 #' 
-#' Synthetic data set of Danish farming data, similar to the 
+#' Synthetic data set of Danish farming data, similar to the  
 #' structure of the real Farm Structure Survey (FSS) data. It contains more than 
 #' 37,000 synthetic records - generated in a way that should
 #' replicate the structure and the distribution of real data,

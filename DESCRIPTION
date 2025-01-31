@@ -1,18 +1,15 @@
 Package: MRG
 Type: Package
 Title: Create Non-Confidential Multi-Resolution Grids
-Version: 0.2.19
-Authors@R: c(person(given = c("Jon", "Olav"),
-                      family = "Skoien",
+Version: 0.3.5
+Authors@R: c(person(given = c("No"),
+                      family = "Name",
                       role = c("aut", "cre"),
-                      email = "jon.skoien@gmail.com"),
-               person(given = "Nicolas",
-                      family = "Lampach",
-                      role = "aut"))
-Maintainer: Jon Olav Skoien <jon.skoien@gmail.com>
+                      email = "no.name@review.com"))
+Maintainer: No Name <no.name@review.com>
 Imports: magrittr, parallel, terra, sf, stars, plyr, dplyr, rlang, sjmisc, vardpoor, 
-              purrr, tidyr, tidyselect, methods
-Suggests: ggplot2, patchwork, viridis, knitr, rmarkdown, giscoR, bookdown, units, ggforce, kableExtra
+              purrr, tidyr, tidyselect, methods, ggplot2, viridis, grDevices, utils
+Suggests: patchwork, knitr, rmarkdown, giscoR, bookdown, units, ggforce, kableExtra
 Description: Functionality for creating gridded data, respecting the confidentiality rules, 
     such as a minimum number of units and dominance by one or more units in the grid cell.
     The functions also include the possibility for contextual suppression of data.

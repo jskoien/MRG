@@ -128,25 +128,25 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
   names(dnum) = "count"
   if (!is.null(vars)) {
     ifg = addweights(ifg, vars, weights)
-    ifg$countw = ifg$count * ifg$weight1
+    ifg$countw = ifg$count * st_drop_geometry(ifg[, paste0("weight_", vars[1])][[1]])
     if (verbose) print("rasterizing weighted count")
     dnumw = rasterize(ifg, field = "countw", r0, fun = "sum")
     if (verbose) print("succeeded rasterizing weighted count")
     names(dnumw) = "countw"
     dind = dweight = list()
     for (iw in 1:length(vars)) {
-      if (confrules == "individual") ifg[st_drop_geometry(ifg[, vars[iw]]) == 0, paste0("weight", iw)]  = 0
+      if (confrules == "individual") ifg[st_drop_geometry(ifg[, vars[iw]]) == 0, paste0("weight_", vars[iw])]  = 0
       ifg[, paste(vars[iw],"_w", iw, sep="")] = 
               st_drop_geometry(ifg)[, vars[iw]] * 
-                   st_drop_geometry(ifg[,paste0("weight", iw)])
+                   st_drop_geometry(ifg[,paste0("weight_", vars[iw])])
       if (verbose) print(paste("rasterizing variable ", vars[iw]))
       dind[[iw]] = rasterize(ifg, field = paste0(vars[iw], "_w", iw), r0, fun = "sum")
       if (verbose) print(paste("succeeded rasterizing variable ", vars[iw]))
       
       if (verbose) print(paste("rasterizing weight ", iw))
-      dweight[[iw]] = rasterize(ifg, field = paste0("weight", iw), r0, fun = "sum")
+      dweight[[iw]] = rasterize(ifg, field = paste0("weight_", vars[iw]), r0, fun = "sum")
       if (verbose) print(paste("succeeded rasterizing weight", iw))
-      names(dweight[[iw]]) = paste0("weight", iw)
+      names(dweight[[iw]]) = paste0("weight_", vars[iw])
   #    names(dind[[iw]]) = c(vars[iw], paste0(vars[iw], "_w", iw))
       names(dind[[iw]]) = vars[iw]
     }
@@ -183,11 +183,11 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
 
 addweights = function(ifg, vars, weights) {
 if (missing(weights) || is.null(weights) || weights == 1) {
-  for (iw in 1:length(vars)) ifg[,paste0("weight", iw)] = 1 
+  for (iw in 1:length(vars)) if (!paste0("weight_", vars[iw]) %in% names(ifg)) ifg[,paste0("weight_", vars[iw])] = 1 
 } else if (length(weights) == 1) { 
-  for (iw in 1:length(vars)) ifg[,paste0("weight", iw)] = as.numeric(data.frame(ifg)[, weights])
+  for (iw in 1:length(vars)) if (!paste0("weight_", vars[iw]) %in% names(ifg)) ifg[,paste0("weight_", vars[iw])] = as.numeric(data.frame(ifg)[, weights])
 } else {
-  for (iw in 1:length(weights)) ifg[,paste0("weight", iw)] = 
+  for (iw in 1:length(weights)) if (!paste0("weight_", vars[iw]) %in% names(ifg)) ifg[,paste0("weight_", vars[iw])] = 
       as.numeric(data.frame(ifg)[, weights[iw]])
 }
 ifg

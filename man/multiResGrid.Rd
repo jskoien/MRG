@@ -5,10 +5,7 @@
 \alias{multiResGrid.MRG}
 \alias{multiResGrid.sf}
 \alias{multiResGrid.list}
-\title{Function that creates a multi-resolution grid with larger grid cells in
-regions with lower resolution of data, or where data needs to
-be anonymized for disclosure control reasons. The function can also be used
-to create a grid of new variables, following an existing grid.}
+\title{Create multi-resolution grids based on confidentiality or reliability restrictions}
 \usage{
 multiResGrid(MRGinp, ...)
 
@@ -26,8 +23,6 @@ multiResGrid(MRGinp, ...)
   nlarge = 2,
   plim = 0.85,
   verbose = FALSE,
-  nclus = 1,
-  clusType,
   domEstat = TRUE,
   outfile = NULL,
   checkDominance = TRUE,
@@ -51,7 +46,7 @@ multiResGrid(MRGinp, ...)
 \arguments{
 \item{MRGinp}{Either an MRGobject (from a call to \code{\link{createMRGobject}}) or
 a list of gridded data with different resolutions (from a call to \code{\link{gridData}} or
-a gridded sf-object (typically from an earlier call to \code{multiResGrid}}
+a gridded sf-object (typically from an earlier call to \code{multiResGrid})}
 
 \item{...}{Possible arguments to underlying functions}
 
@@ -79,13 +74,8 @@ the total value for the variable in the grid cell (see details of \code{\link{gr
 
 \item{plim}{See nlarge}
 
-\item{verbose}{indicates if some extra output should be printed}
-
-\item{nclus}{Number of clusters to use for parallel processing. No parallelization is used
-for \code{nclus = 1}.}
-
-\item{clusType}{The type of cluster; see \code{\link[parallel]{makeCluster}} for more details.
-The default of makeCluster is used if type is missing or NA}
+\item{verbose}{Indicates if some extra output should be printed. Usually TRUE/FALSE, but can also have 
+a value of 2 for \code{\link{multiResGrid}} for even more output.}
 
 \item{domEstat}{Should the dominance rule be applied as in the IFS handbook (TRUE), where 
  the weights are rounded before finding the  first nlarge contributors, or should 
@@ -109,8 +99,8 @@ a value of the individual vars above zero ("individual") or the total number of 
 the data set ("total")?}
 
 \item{suppresslim}{Parameter that can be used to avoid that almost empty grid cells are merged with cells 
-with considerably higher number of observations. The value is a minimum percentage of the total
-potential new cell for a grid cell to be aggregated.}
+with considerably higher number of observations. The value is a minimum share of the total
+potential new cell for a grid cell to be aggregated. See below for more details.}
 
 \item{sumsmall}{Logical; should the suppresslimSum value be applied on the sum of
 small grid cells within the lower resolution grid cell?
@@ -166,11 +156,21 @@ Note that the function might (if \code{postProcess = FALSE})
 return values also for the confidential grid-cells.
 }
 \description{
-Two main confidentiality rules are considered:
-- Threshold rule (suppression due to a minimum number of counts)
-- Dominance rule (suppression due to dominance by one or more units)
+Function that creates a multi-resolution grid with larger grid cells in
+regions with lower resolution of data, or where data needs to
+be anonymized for disclosure control reasons. The function can also be used
+to create a grid of new variables, using an existing multi-resolution grid 
+as template.
 }
 \details{
+The possible restrictions that will lead to aggregation of a grid cell are:
+\enumerate{
+ \item{ Frequency rule (Aggregate to reach a minimum number of counts)}
+ \item{ Dominance rule (Aggregate because of dominance by one or more units)}
+ \item{ Reliability rule (Aggregate because the uncertainty is too high)}
+ \item{ User defined rule (Aggregate because a grid cell does not respect a user defined criteria)}
+}
+
 This function will find the highest resolution data set that fulfills the 
        confidentiality rules and potential reliability rules for variable(s) of interest.
        Starting with the second highest resolution (5 km in the default settings),
@@ -231,7 +231,7 @@ This function will find the highest resolution data set that fulfills the
        lower resolution. The parameter \code{suppresslim} indicates the minimum value in a grid cell 
        relative to the possible lower resolution grid cell 
        before it is necessary to aggregate. If the limit is 0.05, a grid cell would only cause an aggregation
-       to lower resolution if the value in the grid cell is more than 5% of the value in the lower resolution 
+       to lower resolution if the value in the grid cell is more than 5\% of the value in the lower resolution 
        grid cell. Instead, it would be left as it is, and will be suppressed in the post-processing step.
 
        There are cases when the built-in confidentiality checks are not what the user needs. 
@@ -262,9 +262,12 @@ This function will find the highest resolution data set that fulfills the
 \examples{
 \donttest{
 library(sf)
-if (!require(ggplot2)) print("Plotting of results will not work without installation of ggplot2")
-if (!require(viridis)) print("Some of the plots will not work without installation of ggplot2")
-if (!require(patchwork)) print("Some of the plots will not work without installation of patchwork")
+if (!require(ggplot2)) print("Plotting of results will not work 
+                     without installation of ggplot2")
+if (!require(viridis)) print("Some of the plots will not work 
+                     without installation of viridis package")
+if (!require(patchwork)) print("Some of the plots will not work 
+                     without installation of patchwork")
 
 if (require(giscoR)) {
   useBorder = TRUE 
@@ -338,7 +341,7 @@ himg4 = multiResGrid(fsl,  vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg,
 # A lower value would be recommended, but a high value speeds up the computation for this example
 himg5 = multiResGrid(fsl,  vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
                       strat = "STRA_ID_CORE", checkReliability = TRUE, 
-                      reliabilitySplit = 15, rounding = FALSE, pseudoreg = "REGIONS")
+                      reliabilitySplit = TRUE, rounding = FALSE, pseudoreg = "REGIONS")
                       
 # Apply suppreslim to suppress insignificant grid cells
 # Show intermediate maps of confidential cells (wait 5 seconds)
@@ -415,12 +418,12 @@ p03
 # of the administration building, but the map without reliability check has too high values 
 # for too many cells
 
-if (useBorder) himg04 = st_intersection(dkb, himg4)
+if (useBorder) himg04 = st_intersection(dkb, himg4) else himg04 = himg4
 himg04$area = st_area(himg04)/1e6
 units(himg04$area) = NULL
 himg04$uaashare = himg04$UAA/himg04$area
 himg04$uaashare[himg04$uaashare > 1000] = 1000
-g4 = ggplot() + geom_sf(data = himg04, aes(fill = uaashare), lwd = 0) +
+p04 = ggplot() + geom_sf(data = himg04, aes(fill = uaashare), lwd = 0) +
   scale_fill_viridis( name = "\% UAA",  trans = "log10", limits = c(1,1000)) +
   geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) +
   coord_sf(crs = 3035) +#, xlim = c(2377294, 6400000), ylim = c(1313597, 5628510)) +
@@ -434,14 +437,14 @@ himg05$area = st_area(himg05)/1e6
 units(himg05$area) = NULL
 himg05$uaashare = himg05$UAA/himg05$area
 himg05$uaashare[himg05$uaashare > 1000] = 1000
-g5 = ggplot() + geom_sf(data = himg05, aes(fill = uaashare), lwd = 0) +
+p05 = ggplot() + geom_sf(data = himg05, aes(fill = uaashare), lwd = 0) +
   scale_fill_viridis( name = "\% UAA",  trans = "log10", limits = c(1,1000)) +
   coord_sf(crs = 3035) +#, xlim = c(2377294, 6400000), ylim = c(1313597, 5628510)) +
   ggtitle("UAA share (sample with reliability check)")  +
   theme_bw()
-if (useBorder) g5 = g5 + geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) 
+if (useBorder) p05 = p05 + geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) 
   
-if (require(patchwork)) g4 + g5 + plot_layout(guides = "collect")
+if (require(patchwork)) p04 + p05 + plot_layout(guides = "collect")
   
 if (useBorder) himg06 = st_intersection(dkb, himg6) else himg06 = himg6
 p06 = ggplot() + geom_sf(data = himg06, aes(fill = UAA), lwd = 0) +

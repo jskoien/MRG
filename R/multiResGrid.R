@@ -1,11 +1,19 @@
+#' Create multi-resolution grids based on confidentiality or reliability restrictions
+#' 
 #' Function that creates a multi-resolution grid with larger grid cells in
 #' regions with lower resolution of data, or where data needs to
 #' be anonymized for disclosure control reasons. The function can also be used
-#' to create a grid of new variables, following an existing grid.
+#' to create a grid of new variables, using an existing multi-resolution grid 
+#' as template.
 #'
-#' Two main confidentiality rules are considered:
-#' - Threshold rule (suppression due to a minimum number of counts)
-#' - Dominance rule (suppression due to dominance by one or more units)
+#' The possible restrictions that will lead to aggregation of a grid cell are:
+#' \enumerate{
+#'  \item{ Frequency rule (Aggregate to reach a minimum number of counts)}
+#'  \item{ Dominance rule (Aggregate because of dominance by one or more units)}
+#'  \item{ Reliability rule (Aggregate because the uncertainty is too high)}
+#'  \item{ User defined rule (Aggregate because a grid cell does not respect a user defined criteria)}
+#' }
+#'
 #'
 #' @eval MRGparam("MRGinp")
 #' @eval MRGparam("mincount")
@@ -17,8 +25,6 @@
 #' @eval MRGparam("countFeatureOrTotal")
 #' # @eval MRGparam("minpos")
 #' @eval MRGparam("verbose")
-#' @eval MRGparam("nclus")
-#' @eval MRGparam("clusType")
 #' @eval MRGparam("plim")
 #' @eval MRGparam("domEstat")
 #' @eval MRGparam("outfile")
@@ -140,9 +146,12 @@
 #' @examples
 #' \donttest{
 #' library(sf)
-#' if (!require(ggplot2)) print("Plotting of results will not work without installation of ggplot2")
-#' if (!require(viridis)) print("Some of the plots will not work without installation of ggplot2")
-#' if (!require(patchwork)) print("Some of the plots will not work without installation of patchwork")
+#' if (!require(ggplot2)) print("Plotting of results will not work 
+#'                      without installation of ggplot2")
+#' if (!require(viridis)) print("Some of the plots will not work 
+#'                      without installation of viridis package")
+#' if (!require(patchwork)) print("Some of the plots will not work 
+#'                      without installation of patchwork")
 #' 
 #' if (require(giscoR)) {
 #'   useBorder = TRUE 
@@ -216,7 +225,7 @@
 #'# A lower value would be recommended, but a high value speeds up the computation for this example
 #' himg5 = multiResGrid(fsl,  vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
 #'                       strat = "STRA_ID_CORE", checkReliability = TRUE, 
-#'                       reliabilitySplit = 15, rounding = FALSE, pseudoreg = "REGIONS")
+#'                       reliabilitySplit = TRUE, rounding = FALSE, pseudoreg = "REGIONS")
 #'                       
 #'# Apply suppreslim to suppress insignificant grid cells
 #'# Show intermediate maps of confidential cells (wait 5 seconds)
@@ -293,12 +302,12 @@
 #' # of the administration building, but the map without reliability check has too high values 
 #' # for too many cells
 #' 
-#' if (useBorder) himg04 = st_intersection(dkb, himg4)
+#' if (useBorder) himg04 = st_intersection(dkb, himg4) else himg04 = himg4
 #' himg04$area = st_area(himg04)/1e6
 #' units(himg04$area) = NULL
 #' himg04$uaashare = himg04$UAA/himg04$area
 #' himg04$uaashare[himg04$uaashare > 1000] = 1000
-#' g4 = ggplot() + geom_sf(data = himg04, aes(fill = uaashare), lwd = 0) +
+#' p04 = ggplot() + geom_sf(data = himg04, aes(fill = uaashare), lwd = 0) +
 #'   scale_fill_viridis( name = "% UAA",  trans = "log10", limits = c(1,1000)) +
 #'   geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) +
 #'   coord_sf(crs = 3035) +#, xlim = c(2377294, 6400000), ylim = c(1313597, 5628510)) +
@@ -312,14 +321,14 @@
 #' units(himg05$area) = NULL
 #' himg05$uaashare = himg05$UAA/himg05$area
 #' himg05$uaashare[himg05$uaashare > 1000] = 1000
-#' g5 = ggplot() + geom_sf(data = himg05, aes(fill = uaashare), lwd = 0) +
+#' p05 = ggplot() + geom_sf(data = himg05, aes(fill = uaashare), lwd = 0) +
 #'   scale_fill_viridis( name = "% UAA",  trans = "log10", limits = c(1,1000)) +
 #'   coord_sf(crs = 3035) +#, xlim = c(2377294, 6400000), ylim = c(1313597, 5628510)) +
 #'   ggtitle("UAA share (sample with reliability check)")  +
 #'   theme_bw()
-#' if (useBorder) g5 = g5 + geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) 
+#' if (useBorder) p05 = p05 + geom_sf(data = dkb, fill = NA, colour='black', lwd = 1) 
 #'   
-#' if (require(patchwork)) g4 + g5 + plot_layout(guides = "collect")
+#' if (require(patchwork)) p04 + p05 + plot_layout(guides = "collect")
 #'   
 #' if (useBorder) himg06 = st_intersection(dkb, himg6) else himg06 = himg6
 #' p06 = ggplot() + geom_sf(data = himg06, aes(fill = UAA), lwd = 0) +
@@ -386,7 +395,7 @@ multiResGrid.sf <- function(MRGinp, ..., ifg, vars) {
 #' @export
 multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = "feature", mincount = 10, #minpos = 4, 
                               nlarge = 2,
-                              plim = 0.85, verbose = FALSE, nclus = 1, clusType, domEstat = TRUE, 
+                              plim = 0.85, verbose = FALSE, domEstat = TRUE, 
                               outfile = NULL, checkDominance = TRUE,
                               checkReliability = FALSE, userfun, strat = NULL, confrules = "individual", 
                               suppresslim = 0, sumsmall = FALSE, suppresslimSum = NULL,
@@ -396,7 +405,15 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
   #  To avoid R CMD check notes
   hsum = wsum = www = small = weight = data = himgid = dominance = . = NULL
   if (!missing(ifg) && !inherits(ifg, "sf")) stop("ifg is not an sf-object ")
-  if (length(MRGinp) > 1) ress = unlist(lapply(MRGinp, FUN = function(MRGinpl) MRGinpl$res[1])) else ress = 0
+  
+  if (length(MRGinp) > 1) {
+    if (!inherits(MRGinp[[1]], "sf")) cat("MRGinp is not a list of sf-objects \n")
+    if (!"res" %in% names(MRGinp[[1]])) cat("MRGinp does not have a column with resolutions \n")
+    ress = unlist(lapply(MRGinp, FUN = function(MRGinpl) MRGinpl$res[1])) 
+  } else {
+    if (!inherits(MRGinp, "sf")) cat("MRGinp is not an sf-object \n")
+    ress = 0
+  }
   if (checkReliability) {
     if (missing(strat) | is.null(strat) ) {
       if (!"strat" %in% names(ifg)) ifg$strat = 1  
@@ -415,9 +432,11 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
     # Some kind of test needed to check if this step has already been done, and also if it is necessary    
     #    for (iw in 1:length(vars)) ifg[, paste0(vars, iw)] = data.frame(ifg)[, vars[iw]]
     if (!"ID" %in% names(ifg)) ifg$ID = 1:dim(ifg)[1]
-    for (iw in 1:length(vars)) ifg[, paste0("gridvar", iw)] = st_drop_geometry(ifg[, vars[iw]])
-    ifg = addweights(ifg, vars, weights)
-    wts = paste0("weight", 1:length(vars))
+    if (!length(grep(paste0("weight_", vars, collapse = "|"), names(ifg))) == length(vars)) ifg = addweights(ifg, vars, weights)
+    for (iw in 1:length(vars)) {
+      ifg[, paste0("gridvar", iw)] = st_drop_geometry(ifg[, vars[iw]])
+      ifg[, paste0("weight", iw)] = st_drop_geometry(ifg[, paste0("weight_", vars[iw])])
+    }
     if (checkReliability) {
       ifg = ifg[, c("ID", paste0("gridvar", 1:length(vars)), paste0("weight", 1:length(vars)), "strat", "pseudoreg")]
     } else {
@@ -451,9 +470,14 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
     }
   } else {
     himg = MRGinp[[1]]   
-    if (missing(vars)) vvars = NULL else vvars = vars
-    if (missing(weights) || is.null(weights) || weights == 1) wweights = NULL else wweights = weights
-    hcols = which(names(himg)  %in% c("ID", "res", "count", "countw", "geometry", vvars, wweights, paste0("weight", 1:100)))
+    if (missing(vars)) {
+      vvars = NULL
+      wweights = NULL
+    } else {
+      vvars = vars
+      wweights = paste0("weight_", vars)
+    }
+    hcols = which(names(himg)  %in% c("ID", "res", "count", "countw", "geometry", vvars, wweights))
     himg = himg[,hcols]
   }
   himg = himg %>% mutate(confidential = FALSE, reliability = FALSE, small = FALSE,
@@ -461,11 +485,14 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
   himgs = list()
   lohs = list()
   if (!missing(vars)) for (ivar in 1:length(vars)) himg[,paste0("vres", ivar)] = 0
+  suppresslim0 = suppresslim
   for (ires in 2:(length(ress) + 1)) {
+    suppresslim = suppresslim0/(ress[ires]/ress[ires-1]/2)
+    if (verbose) cat("Creating multi-resolution grid, iteration ", ires, "\n")
     lres = ress[ires]
     if (ires <= length(ress)) {
       limg = MRGinp[[ires]] 
-      lcols = which(names(limg)  %in% c("ID", "res", "count", "countw", "geometry", vvars, wweights, paste0("weight", 1:100)))
+      lcols = which(names(limg)  %in% c("ID", "res", "count", "countw", "geometry", vvars, wweights))
       limg = limg[,lcols]
       limg = limg %>% mutate(confidential = FALSE, reliability = FALSE, small = FALSE,
                              freq = FALSE, dom = FALSE, ufun = FALSE)
@@ -473,7 +500,7 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
       if (!missing(vars)) for (ivar in 1:length(vars)) limg[,paste0("vres", ivar)] = 0
     }    
     ##    #' @importFrom utils txtProgressBar setTxtProgressBar
-    #' @importFrom sf st_join st_within st_drop_geometry st_make_grid st_coordinates st_crs st_area
+#' @importFrom sf st_join st_within st_drop_geometry st_make_grid st_coordinates st_crs st_area
     if (!missing(ifg) && !is.null(ifg) && ires <= length(ress)) {
       ifg$himgid = st_join(ifg, himg, join = st_within)$ID.y
       ifg$limgid = st_join(ifg, limg, join = st_within)$ID.y
@@ -492,7 +519,7 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
           #          sel = (loh[[paste0(vars[ivar], "_w", ivar, ".x")]]  <
           #                   suppresslim*loh[[paste0(vars[ivar], "_w", ivar, ".y")]]) & loh[[paste0("weight",ivar, ".x")]] < mincount
           sel = (loh[[paste0(vars[ivar], ".x")]]  <
-                   suppresslim*loh[[paste0(vars[ivar], ".y")]]) & loh[[paste0("weight",ivar, ".x")]] < mincount
+                   suppresslim*loh[[paste0(vars[ivar], ".y")]]) & loh[[paste0("weight_",vars[ivar], ".x")]] < mincount
           #        } else sel = (loh[[paste0(vars[ivar], "_w", ivar, ".x")]]  <
           #                        suppresslim*loh[[paste0(vars[ivar], "_w", ivar, ".y")]]) & loh[["countw.x"]] < mincount
         } else sel = (loh[[paste0(vars[ivar], ".x")]]  <
@@ -521,7 +548,7 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
     ifgdat = st_drop_geometry(ifgl)
     
     if (tolower(countFeatureOrTotal) == "feature" & !missing(vars)) {
-      ww = himgdat[,names(himgdat) %in% paste0("weight", 1:length(vars)), drop = FALSE]
+      ww = himgdat[,names(himgdat) %in% paste0("weight_", vars), drop = FALSE]
       ww = apply(ww, MARGIN = 1, FUN = function(x) if (sum(x > 0))  min(x[x>0]) else 0)
     } else ww = himgdat[, "countw"]
     wf = which(ww > 0 & ww < mincount)
@@ -531,6 +558,7 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
     for (ivar in 1:len) {
       ifgdatl = NULL
       if (checkDominance & !missing(vars)) {
+        if (verbose) cat("Checking dominance \n")
         ifgdatl <- ifgdat[,c("himgid", paste0("gridvar", ivar), paste0("weight",ivar))] 
         names(ifgdatl) = c("himgid", "gridvar", "weight")
         ifgdatl$ehimgid = ifgdatl$himgid
@@ -547,6 +575,7 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
         if (length(domid) > 0) himg$dom[domid] = TRUE
       } 
       if (!missing(userfun) && is.function(userfun)) {
+        if (verbose) cat("Checking userfun \n")
         if (is.null(ifgdatl)) ifgdatl <- ifgdat[,c("himgid", paste0("gridvar", ivar), 
                                                    paste0("weight",ivar))] 
         
@@ -579,6 +608,7 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
     }
     
     if (checkReliability) {
+      if (verbose) cat("Checking reliability \n")
       rsplit = reliabilitySplit
       if (reliabilitySplit & (dim(ifg)[1] > 50000 | dim(himg)[1] > 1000)) {
         if (is.logical(reliabilitySplit)) rsplit = dim(ifg)[1] %/% 30000
@@ -588,7 +618,7 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
         for (ivar in 1:length(vars)){
           nhimg = dim(himg)[1]
           vestres = mrg_varestim(ifg, var = paste0("gridvar", ivar), strat = "strat", PSU = "ID", 
-                                 weight = paste0("weight", ivar), split = reliabilitySplit, pseudoreg = "pseudoreg", 
+                                 weight = paste0("weight", ivar), split = rsplit, pseudoreg = "pseudoreg", 
                                  verbose = verbose, nhimg = nhimg)
           himg[,paste0("vres",ivar)] = vestres
         }
@@ -598,6 +628,7 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
     }
     
     himg$confidential = rowSums(st_drop_geometry(himg[,c("freq", "dom", "ufun", "reliability")])) > 0
+    if (verbose) cat("Finished checks, updating multi-resoluion grid \n")
     
     if (ires <= length(ress)) {
       loh$confidential = himg$confidential
@@ -615,21 +646,31 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
         # Check how many himg-cells per limg-cell. Do not aggregate if it is only 1 
         iac = aggregate(rep(1, length(loh$ID.x)), by = list(loh$ID.y), FUN = sum)
         singlimg = iac$Group.1[iac$x == 1]
-        if (length(singlimg) > 0) idAdd = idAdd[!(idAdd %in% singlimg)]
+        if (length(singlimg) > 0) {
+          idAdd = idAdd[!(idAdd %in% singlimg)]
+          himg$singlimg = FALSE
+          himg$singlimg[loh$ID.y %in% singlimg] = TRUE
+        }
+        if ("singlimg" %in% names(himg)) limg$singlimg = FALSE
         # Find all himg-cells in the limg-cells to be added 
         idRem = which(himg$ID %in% unique(loh$ID.x[loh$ID.y %in% idAdd]))
         if (length(idRem) == 0) break
         remIdRem = loh$ID.x[loh$ID.y %in% singlimg]
         if (length(remIdRem) > 0) {
           if (sum(idRem %in% remIdRem) > 0) {
-            print(sum(idRem %in% remIdRem))
-            stop("There are still single himg-cells to be deleted from limg-cells
-                This should not happen")
+            stop(paste("There are still single himg-cells to be deleted from limg-cells
+                This should not happen", sum(idRem %in% remIdRem)))
           }
           idRem = idRem[!(idRem %in% remIdRem)]
         }
         
         himg = himg[-idRem,]
+        if (verbose > 1) {
+          cat("names(himg):", names(himg), "\n")
+          cat("names(limg):", names(limg), "\n")
+          cat("length(idAdd)", length(idAdd), "\n")
+          cat("sum(himg$singlimg", sum(himg$singlimg), "\n")
+        }
         himg = rbind(himg, limg[idAdd,])
       } 
     } else {idRem = NULL; idAdd = NULL}      
@@ -669,6 +710,7 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
 
 
 mrg_varestim <- function(x, var, strat, PSU, weight, split, verbose, pseudoreg, nhimg){
+  t0 = proc.time()[3]
   ID = n = hld = w_sum = wdiff = NULL
   nx = dim(x)[1]
   himgids = unique(x$himgid)
@@ -688,26 +730,33 @@ mrg_varestim <- function(x, var, strat, PSU, weight, split, verbose, pseudoreg, 
   if (dim(tt)[1] > 0) {
     x = x[!(x$himgid %in% tt$himgid), ]
   }
+  t1 = proc.time()[3]
+  if (verbose > 1) cat("Varestim - finished preprocessing - t= ", round(t1-t0,2), "secs \n")
   if (dim(x)[1] == 0) {
     out_var = data.frame(himgid = himgids, rse = 0)
   } else {
-  if (split == 1) {
-    df = x
-    out_var = vardom(dataset = df, Y= var, H = "strat",
-                     PSU = "ID",
-                     w_final = weight, Dom = "himgid")$all_result
-  } else {
-    himgid <- unique(x$himgid)    
-    #' @importFrom dplyr left_join mutate ungroup group_by distinct case_when n
-    #' @importFrom sjmisc split_var 
-    df_cl <- left_join(x, data.frame(himgid = himgid, cluster = split_var(himgid, n = split)), by = "himgid")
-    out_var <- NULL
-    for (isp in 1:split){
-      df = x[which(df_cl$cluster == isp),]
-      if (verbose) print(paste("reliabilitySplit: ", isp, 
-                               "- Number of records: ", paste(dim(df)[1], 
-                                                              " - Number of unique IDs: ", length(unique(df$himgid)))))
-
+    if (split == 1) {
+      df = x
+      out_var = vardom(dataset = df, Y= var, H = "strat",
+                       PSU = "ID",
+                       w_final = weight, Dom = "himgid")$all_result
+      t21 = proc.time()[3]
+      if (verbose > 1) cat("varestim - finished single split vardom estimation in ", round(t21-t1, 2), "secs \n")
+    } else {
+      himgid <- unique(x$himgid)    
+      #' @importFrom dplyr left_join mutate ungroup group_by distinct case_when n
+      #' @importFrom sjmisc split_var 
+      df_cl <- left_join(x, data.frame(himgid = himgid, cluster = split_var(himgid, n = split)), by = "himgid")
+      out_var <- NULL
+      t20 = proc.time()[3]
+      if (verbose > 1) cat("varestim - will split reliability calcs in ", split, "cases\n")
+      for (isp in 1:split){
+        t21 = proc.time()[3]
+        df = x[which(df_cl$cluster == isp),]
+        if (verbose) print(paste("reliabilitySplit: ", isp, 
+                                 "- Number of records: ", paste(dim(df)[1], 
+                                                                " - Number of unique IDs: ", length(unique(df$himgid)))))
+        
         icor = icor + 1
         t <- df %>% group_by(strat) %>% 
           summarise(hld=n(), w_sum = sum(.data[[weight]], na.rm = T)) %>% 
@@ -717,23 +766,29 @@ mrg_varestim <- function(x, var, strat, PSU, weight, split, verbose, pseudoreg, 
           h_st <- t %>% distinct(strat) %>% pull()
           df <- df %>% mutate(strat = case_when(strat %in% c(h_st)~(99999-pcor),
                                                 T ~ strat))}
-      #' @importFrom vardpoor vardom
-      est <- vardom(dataset = df, Y= var, H = "strat",
-                    PSU = "ID",
-                    w_final = weight, Dom = "himgid")
-      out_var<-rbind(out_var, est$all_result)
+        #' @importFrom vardpoor vardom
+        t22 = proc.time()[3]
+        if (verbose > 1) cat("varestim - ready to call vardom for split ", isp, "of", split, "time:", round(t22-t21,2), "secs\n")
+        est <- vardom(dataset = df, Y= var, H = "strat",
+                      PSU = "ID",
+                      w_final = weight, Dom = "himgid")
+        t23 = proc.time()[3]
+        if (verbose > 1) cat("varestim - ready to call vardom for split ", isp, "of", split, "time:", round(t23-t22,2), "secs\n")
+        out_var<-rbind(out_var, est$all_result)
+      }
     }
-  }
-  if (icor > 0) {
-    print(paste(icor, "of the subsets included strata with only one record. \n",
-                "You might want to check the strata or consider a lower value for reliabilitySplit."))
-  }
-  out_var$himgid = as.numeric(out_var$himgid)
-  if (dim(tt)[1] > 0) out_var = rbind(out_var[,c("himgid", "rse")], data.frame(himgid = tt$himgid, rse = 0))
-  out_var = out_var[order(out_var$himgid),]
+    if (verbose) cat("varestim - finished looping in totally ", round(proc.time()[3]-t1,2), "secs \n")
+    if (icor > 0) {
+      cat(icor, "of the subsets included strata with only one record. \n",
+          "You might want to check the strata or consider a lower value for reliabilitySplit.")
+    }
+    out_var$himgid = as.numeric(out_var$himgid)
+    if (dim(tt)[1] > 0) out_var = rbind(out_var[,c("himgid", "rse")], data.frame(himgid = tt$himgid, rse = 0))
+    out_var = out_var[order(out_var$himgid),]
   }
   if (!missing(nhimg) && nhimg != dim(out_var)[1]) stop("The dimension of out_var does not match the dimension of himg")
   if (sum(duplicated(out_var$himgid)) > 0) stop("There are duplicated himgids in out_var")
+  if (verbose > 1) cat("Finished mrg_varestim")
   out_var$rse
 }
 
@@ -792,5 +847,3 @@ dominanceRule = function(ifglldat, nlarge, plim, domEstat = TRUE) {
   }
   dominance
 }
-
-

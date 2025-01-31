@@ -19,6 +19,6 @@ print.MRG = function(x, ...) {
     print(st_geometry(x$ifg), n = 0)
     print(st_drop_geometry(x$ifg[1:5,]), ...)
   }
-  cat("\nParameters:\n")
+  cat("\nParameters: \n")
   print(unlist(x[which(!names(x) %in% c("MRGinp", "ifg", "ress"))]))
 }

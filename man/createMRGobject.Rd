@@ -77,7 +77,8 @@ the total value for the variable in the grid cell (see details of \code{\link{gr
 
 \item{plim}{See nlarge}
 
-\item{verbose}{indicates if some extra output should be printed}
+\item{verbose}{Indicates if some extra output should be printed. Usually TRUE/FALSE, but can also have 
+a value of 2 for \code{\link{multiResGrid}} for even more output.}
 
 \item{nclus}{Number of clusters to use for parallel processing. No parallelization is used
 for \code{nclus = 1}.}
@@ -114,8 +115,8 @@ a value of the individual vars above zero ("individual") or the total number of 
 the data set ("total")?}
 
 \item{suppresslim}{Parameter that can be used to avoid that almost empty grid cells are merged with cells 
-with considerably higher number of observations. The value is a minimum percentage of the total
-potential new cell for a grid cell to be aggregated.}
+with considerably higher number of observations. The value is a minimum share of the total
+potential new cell for a grid cell to be aggregated. See below for more details.}
 
 \item{sumsmall}{Logical; should the suppresslimSum value be applied on the sum of
 small grid cells within the lower resolution grid cell?

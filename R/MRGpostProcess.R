@@ -39,17 +39,20 @@ MRGpostProcess = function(himg, vars, remCols = TRUE, rounding = -1) {
   if (missing(vars) & !is.null(attr(himg, "vars"))) vars = attr(himg, "vars")
   if (missing(remCols) & !is.null(attr(himg, "remCols")) && !isFALSE(attr(himg, "remCols"))) remCols = attr(himg, "remCols")
   if (missing(rounding) & !is.null(attr(himg, "rounding"))  && !isFALSE(attr(himg, "rounding"))) rounding = attr(himg, "rounding")
-  himg[himg$confidential, c("count", "countw")] = NA
+  if ("confidential" %in% names(himg)) himg[himg$confidential, c("count", "countw")] = NA
   if (!isFALSE(rounding) & !is.null(rounding)) {
-    himg[["count"]] = round(himg[["count"]], rounding)
-    himg[["countw"]] = round(himg[["countw"]], rounding)
+    if ("count" %in% names(himg)) himg[["count"]] = round(himg[["count"]], rounding)
+    if ("countw" %in% names(himg)) himg[["countw"]] = round(himg[["countw"]], rounding)
     if (!missing(vars)) {
     for (ivar in 1:length(vars)) {
       var = vars[ivar]
-      himg[[var]][himg$confidential] = NA
-      himg[[paste0("weight", ivar)]][himg$confidential] = NA
+      if ("confidential" %in% names(himg)) {
+        himg[[var]][himg$confidential] = NA
+        himg[[paste0("weight_", vars[ivar])]][himg$confidential] = NA
+      }
       himg[[var]] = round(himg[[var]], rounding)
-      himg[[paste0("weight", ivar)]] = round(himg[[paste0("weight", ivar)]], rounding)
+      if (paste0("weight_", vars[ivar]) %in% names(himg)) himg[[paste0("weight_", vars[ivar])]] = 
+        round(himg[[paste0("weight_", vars[ivar])]], rounding)
     }
   }
   }
@@ -60,8 +63,8 @@ MRGpostProcess = function(himg, vars, remCols = TRUE, rounding = -1) {
   } else mm = NULL
   if (length(mm) > 0) matchrem = matchrem[-mm]  
   matchrem = paste(matchrem, collapse = "|")
-  matchrem = "small|reliability|idcount|idfail|vres|idRem|confidential|ufun|dom|freq"
-  
+  matchrem = "small|reliability|idcount|idfail|vres|idRem|confidential|ufun|dom|freq|singlimg"
   if (remCols) himg = himg %>% select(!matches(matchrem))
+  if (!missing(vars)) attr(himg, "vars") = vars
 himg
 }

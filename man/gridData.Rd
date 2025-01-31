@@ -42,7 +42,8 @@ the data set ("total")?}
 
 \item{crsOut}{The coordinate reference system (crs) to be used}
 
-\item{verbose}{indicates if some extra output should be printed}
+\item{verbose}{Indicates if some extra output should be printed. Usually TRUE/FALSE, but can also have 
+a value of 2 for \code{\link{multiResGrid}} for even more output.}
 
 \item{locAdj}{parameter to adjust the coordinates if they are exactly on the borders between grid cells. The values
  can either be FALSE, 

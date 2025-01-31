@@ -56,7 +56,8 @@ pick the largest (and the first one in the list if they are equal)}
  the weights are rounded before finding the  first nlarge contributors, or should 
 it be the first nlarge contributors*weight, where also fractions are considered (FALSE)?}
 
-\item{verbose}{indicates if some extra output should be printed}
+\item{verbose}{Indicates if some extra output should be printed. Usually TRUE/FALSE, but can also have 
+a value of 2 for \code{\link{multiResGrid}} for even more output.}
 
 \item{nclus}{Number of clusters to use for parallel processing. No parallelization is used
 for \code{nclus = 1}.}

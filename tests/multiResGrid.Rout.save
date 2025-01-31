@@ -37,15 +37,14 @@ Type 'q()' to quit R.
 > fsg$dkb = st_join(fsg, dkb)$NUTS_ID
 > fsg = fsg[!is.na(fsg$dkb) & fsg$dkb == "DK01",]
 > 
+> ifg$ft = as.numeric(substr(ifg$FARMTYPE, 3, 4))^2
+> 
 > s2 = Sys.time()
 > #'
 > # Set the base resolutions, and create a hierarchical list with gridded data
 > ress = c(1,5,10,20,40)*1000
-> # Gridding Utilized agricultural area (UAA)
-> ifl = gridData(ifg, "UAA", res = ress)
-> 
-> # Gridding UAA and organic UAA together
-> ifl3 = gridData(ifg, vars = c("UAA", "UAAXK0000_ORG"), res = ress)
+> # Gridding Utilized agricultural area (UAA), organic UAA and ft together
+> ifl = gridData(ifg, c("UAA", "UAAXK0000_ORG", "ft"), res = ress)
 > 
 > # Gridding the UAA from the survey - the survey weights are in the column EXT_MODULE
 > fsl = gridData(fsg,  vars = c("UAA"), weights = "EXT_MODULE",  res = ress)
@@ -64,9 +63,16 @@ Type 'q()' to quit R.
 [1] "ires 4 20000 #himg-cells: 63 ; removed: 18 ; added: 3 ; confidential: 2"
 [1] "ires 5 40000 #himg-cells: 51 ; removed: 13 ; added: 1 ; confidential: 1"
 > 
+> # Create joint multi-resolution grid of organic UAA
+> himg2 = multiResGrid(ifl, vars = "UAAXK0000_ORG", ifg = ifg, 
++                      checkReliability = FALSE, suppresslim = 0)
+[1] "ires 2 5000 #himg-cells: 286 ; removed: 1000 ; added: 84 ; confidential: 0"
+[1] "ires 3 10000 #himg-cells: 62 ; removed: 256 ; added: 32 ; confidential: 3"
+[1] "ires 4 20000 #himg-cells: 29 ; removed: 44 ; added: 11 ; confidential: 5"
+[1] "ires 5 40000 #himg-cells: 20 ; removed: 14 ; added: 5 ; confidential: 3"
 > 
 > # Create joint multi-resolution grid of organic UAA and total UAA
-> himg3 = multiResGrid(ifl3, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
+> himg3 = multiResGrid(ifl, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
 +                   checkReliability = FALSE, suppresslim = 0)
 [1] "ires 2 5000 #himg-cells: 118 ; removed: 1192 ; added: 108 ; confidential: 10"
 [1] "ires 3 10000 #himg-cells: 40 ; removed: 111 ; added: 33 ; confidential: 6"
@@ -74,13 +80,31 @@ Type 'q()' to quit R.
 [1] "ires 5 40000 #himg-cells: 9 ; removed: 14 ; added: 5 ; confidential: 3"
 > 
 > 
-> # Create joint multi-resolution grid of organic UAA and total UAA
-> himg4 = multiResGrid(ifl3, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
+> # Create joint multi-resolution grid of organic UAA and total UAA, with suppression
+> himg4 = multiResGrid(ifl, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, 
 +                      checkReliability = FALSE, suppresslim = 0.1)
 [1] "ires 2 5000 #himg-cells: 118 ; removed: 1192 ; added: 108 ; confidential: 10"
 [1] "ires 3 10000 #himg-cells: 40 ; removed: 111 ; added: 33 ; confidential: 6"
 [1] "ires 4 20000 #himg-cells: 18 ; removed: 33 ; added: 11 ; confidential: 6"
 [1] "ires 5 40000 #himg-cells: 9 ; removed: 14 ; added: 5 ; confidential: 3"
+> 
+> # Create joint multi-resolution grid of ft
+> himg5 = multiResGrid(ifl, vars = c("ft"), ifg = ifg, 
++                      checkReliability = FALSE, suppresslim = 0.1)
+[1] "ires 2 5000 #himg-cells: 118 ; removed: 1192 ; added: 108 ; confidential: 10"
+[1] "ires 3 10000 #himg-cells: 89 ; removed: 44 ; added: 15 ; confidential: 12"
+> 
+> himg6 = multiResGrid(ifl, vars = c("UAA", "UAAXK0000_ORG", "ft"), ifg = ifg, 
++                      checkReliability = FALSE, suppresslim = 0.1)
+[1] "ires 2 5000 #himg-cells: 118 ; removed: 1192 ; added: 108 ; confidential: 10"
+[1] "ires 3 10000 #himg-cells: 40 ; removed: 111 ; added: 33 ; confidential: 6"
+[1] "ires 4 20000 #himg-cells: 18 ; removed: 33 ; added: 11 ; confidential: 6"
+[1] "ires 5 40000 #himg-cells: 9 ; removed: 14 ; added: 5 ; confidential: 3"
+> 
+> himg7 = MRGmerge(himg1, himg2, himg3 = himg5)
+Warning messages:
+1: attribute variables are assumed to be spatially constant throughout all geometries 
+2: attribute variables are assumed to be spatially constant throughout all geometries 
 > 
 > s3 = Sys.time()
 > 
@@ -89,8 +113,8 @@ Type 'q()' to quit R.
 > # also applying reliability check
 > himg5 <-  multiResGrid(fsl, vars = c("UAA"), weights = "EXT_MODULE", ifg = fsg, 
 +                       strat = "STRA_ID_CORE", checkReliability = TRUE, reliabilitySplit = 5)
-[1] "5 of the subsets included strata with only one record. \n You might want to check the strata or consider a lower value for reliabilitySplit."
-[1] "ires 2 5000 #himg-cells: 116 ; removed: 1058 ; added: 108 ; confidential: 8"
+5 of the subsets included strata with only one record. 
+ You might want to check the strata or consider a lower value for reliabilitySplit.[1] "ires 2 5000 #himg-cells: 116 ; removed: 1058 ; added: 108 ; confidential: 8"
 [1] "Current variance estimation"
 [1] "There are strata, where n_h == 1 and f_h <> 1"
 [1] "Not possible to estimate the variance in these strata!"
@@ -107,32 +131,32 @@ Key: <strat>
     strat      N_h   n_h      f_h
    <char>    <num> <int>    <num>
 1:  99998 3.185556     1 0.313917
-[1] "5 of the subsets included strata with only one record. \n You might want to check the strata or consider a lower value for reliabilitySplit."
-[1] "ires 3 10000 #himg-cells: 72 ; removed: 65 ; added: 21 ; confidential: 3"
-[1] "5 of the subsets included strata with only one record. \n You might want to check the strata or consider a lower value for reliabilitySplit."
-[1] "ires 4 20000 #himg-cells: 65 ; removed: 10 ; added: 3 ; confidential: 2"
-[1] "5 of the subsets included strata with only one record. \n You might want to check the strata or consider a lower value for reliabilitySplit."
-[1] "ires 5 40000 #himg-cells: 48 ; removed: 18 ; added: 1 ; confidential: 1"
-[1] "5 of the subsets included strata with only one record. \n You might want to check the strata or consider a lower value for reliabilitySplit."
-> summary(himg0, digits = 5)
-     count           countw         weight1             res       
- Min.   : 10.0   Min.   : 10.0   Min.   :  6.000   Min.   : 5000  
- 1st Qu.: 20.0   1st Qu.: 20.0   1st Qu.: 16.000   1st Qu.: 5000  
- Median : 20.0   Median : 20.0   Median : 23.000   Median : 5000  
- Mean   : 37.2   Mean   : 37.2   Mean   : 36.373   Mean   : 7549  
- 3rd Qu.: 30.0   3rd Qu.: 30.0   3rd Qu.: 30.000   3rd Qu.:10000  
- Max.   :490.0   Max.   :490.0   Max.   :491.000   Max.   :40000  
- NA's   :1       NA's   :1                                        
-       ID                geometry 
- Min.   : 1.0   POLYGON      :51  
- 1st Qu.:13.5   epsg:3035    : 0  
- Median :26.0   +proj=laea...: 0  
- Mean   :26.0                     
- 3rd Qu.:38.5                     
- Max.   :51.0                     
-                                  
+5 of the subsets included strata with only one record. 
+ You might want to check the strata or consider a lower value for reliabilitySplit.[1] "ires 3 10000 #himg-cells: 72 ; removed: 65 ; added: 21 ; confidential: 3"
+5 of the subsets included strata with only one record. 
+ You might want to check the strata or consider a lower value for reliabilitySplit.[1] "ires 4 20000 #himg-cells: 65 ; removed: 10 ; added: 3 ; confidential: 2"
+5 of the subsets included strata with only one record. 
+ You might want to check the strata or consider a lower value for reliabilitySplit.[1] "ires 5 40000 #himg-cells: 48 ; removed: 18 ; added: 1 ; confidential: 1"
+5 of the subsets included strata with only one record. 
+ You might want to check the strata or consider a lower value for reliabilitySplit.> summary(himg0, digits = 5)
+     count           countw           res              ID      
+ Min.   : 10.0   Min.   : 10.0   Min.   : 5000   Min.   : 1.0  
+ 1st Qu.: 20.0   1st Qu.: 20.0   1st Qu.: 5000   1st Qu.:13.5  
+ Median : 20.0   Median : 20.0   Median : 5000   Median :26.0  
+ Mean   : 37.2   Mean   : 37.2   Mean   : 7549   Mean   :26.0  
+ 3rd Qu.: 30.0   3rd Qu.: 30.0   3rd Qu.:10000   3rd Qu.:38.5  
+ Max.   :490.0   Max.   :490.0   Max.   :40000   Max.   :51.0  
+ NA's   :1       NA's   :1                                     
+          geometry 
+ POLYGON      :51  
+ epsg:3035    : 0  
+ +proj=laea...: 0  
+                   
+                   
+                   
+                   
 > summary(himg1, digits = 5)
-     count           countw           UAA             weight1     
+     count           countw           UAA            weight_UAA   
  Min.   : 10.0   Min.   : 10.0   Min.   :  110.0   Min.   : 10.0  
  1st Qu.: 20.0   1st Qu.: 20.0   1st Qu.:  445.0   1st Qu.: 20.0  
  Median : 20.0   Median : 20.0   Median :  875.0   Median : 20.0  
@@ -159,14 +183,22 @@ Key: <strat>
  3rd Qu.:592.5   3rd Qu.:592.5   3rd Qu.:28228   3rd Qu.:2902.5  
  Max.   :900.0   Max.   :900.0   Max.   :30290   Max.   :4020.0  
  NA's   :5       NA's   :5       NA's   :5       NA's   :5       
-    weight1         weight2          res              ID             geometry
- Min.   : 20.0   Min.   : 0.0   Min.   : 5000   Min.   :1   POLYGON      :9  
- 1st Qu.:200.0   1st Qu.:22.5   1st Qu.:10000   1st Qu.:3   epsg:3035    :0  
- Median :375.0   Median :40.0   Median :40000   Median :5   +proj=laea...:0  
- Mean   :417.5   Mean   :42.5   Mean   :26667   Mean   :5                    
- 3rd Qu.:592.5   3rd Qu.:60.0   3rd Qu.:40000   3rd Qu.:7                    
- Max.   :900.0   Max.   :90.0   Max.   :40000   Max.   :9                    
- NA's   :5       NA's   :5                                                   
+   weight_UAA    weight_UAAXK0000_ORG      res              ID   
+ Min.   : 20.0   Min.   : 0.0         Min.   : 5000   Min.   :1  
+ 1st Qu.:200.0   1st Qu.:22.5         1st Qu.:10000   1st Qu.:3  
+ Median :375.0   Median :40.0         Median :40000   Median :5  
+ Mean   :417.5   Mean   :42.5         Mean   :26667   Mean   :5  
+ 3rd Qu.:592.5   3rd Qu.:60.0         3rd Qu.:40000   3rd Qu.:7  
+ Max.   :900.0   Max.   :90.0         Max.   :40000   Max.   :9  
+ NA's   :5       NA's   :5                                       
+          geometry
+ POLYGON      :9  
+ epsg:3035    :0  
+ +proj=laea...:0  
+                  
+                  
+                  
+                  
 > himg4$UAA = himg4$UAA + 0.001
 > summary(himg4, digits = 5)
      count           countw           UAA        UAAXK0000_ORG   
@@ -177,16 +209,24 @@ Key: <strat>
  3rd Qu.:592.5   3rd Qu.:592.5   3rd Qu.:28228   3rd Qu.:2902.5  
  Max.   :900.0   Max.   :900.0   Max.   :30290   Max.   :4020.0  
  NA's   :5       NA's   :5       NA's   :5       NA's   :5       
-    weight1         weight2          res              ID             geometry
- Min.   : 20.0   Min.   : 0.0   Min.   : 5000   Min.   :1   POLYGON      :9  
- 1st Qu.:200.0   1st Qu.:22.5   1st Qu.:10000   1st Qu.:3   epsg:3035    :0  
- Median :375.0   Median :40.0   Median :40000   Median :5   +proj=laea...:0  
- Mean   :417.5   Mean   :42.5   Mean   :26667   Mean   :5                    
- 3rd Qu.:592.5   3rd Qu.:60.0   3rd Qu.:40000   3rd Qu.:7                    
- Max.   :900.0   Max.   :90.0   Max.   :40000   Max.   :9                    
- NA's   :5       NA's   :5                                                   
+   weight_UAA    weight_UAAXK0000_ORG      res              ID   
+ Min.   : 20.0   Min.   : 0.0         Min.   : 5000   Min.   :1  
+ 1st Qu.:200.0   1st Qu.:22.5         1st Qu.:10000   1st Qu.:3  
+ Median :375.0   Median :40.0         Median :40000   Median :5  
+ Mean   :417.5   Mean   :42.5         Mean   :26667   Mean   :5  
+ 3rd Qu.:592.5   3rd Qu.:60.0         3rd Qu.:40000   3rd Qu.:7  
+ Max.   :900.0   Max.   :90.0         Max.   :40000   Max.   :9  
+ NA's   :5       NA's   :5                                       
+          geometry
+ POLYGON      :9  
+ epsg:3035    :0  
+ +proj=laea...:0  
+                  
+                  
+                  
+                  
 > summary(himg5, digits = 5)
-     count             countw             UAA             weight1       
+     count             countw             UAA            weight_UAA     
  Min.   : 10.000   Min.   : 10.000   Min.   :  110.0   Min.   : 10.000  
  1st Qu.: 15.000   1st Qu.: 20.000   1st Qu.:  400.0   1st Qu.: 20.000  
  Median : 20.000   Median : 20.000   Median :  830.0   Median : 20.000  
@@ -221,7 +261,7 @@ Key: <strat>
 [1] "ires 3 10000 #himg-cells: 92 ; removed: 40 ; added: 14 ; confidential: 13"
 [1] "ires 4 20000 #himg-cells: 82 ; removed: 12 ; added: 2 ; confidential: 11"
 > summary(himg1,digits = 5)
-     count           countw           UAA             weight1     
+     count           countw           UAA            weight_UAA   
  Min.   : 10.0   Min.   : 10.0   Min.   :  110.0   Min.   : 10.0  
  1st Qu.: 20.0   1st Qu.: 20.0   1st Qu.:  445.0   1st Qu.: 20.0  
  Median : 20.0   Median : 20.0   Median :  875.0   Median : 20.0  
@@ -238,7 +278,7 @@ Key: <strat>
  Max.   :40000   Max.   :51.0                     
                                                   
 > summary(himg2, digits = 5)
-     count             countw             UAA            weight1       
+     count             countw             UAA           weight_UAA     
  Min.   : 10.000   Min.   : 10.000   Min.   : 110.0   Min.   : 10.000  
  1st Qu.: 20.000   1st Qu.: 20.000   1st Qu.: 475.0   1st Qu.: 20.000  
  Median : 20.000   Median : 20.000   Median : 800.0   Median : 20.000  
@@ -255,7 +295,7 @@ Key: <strat>
  Max.   :20000.0   Max.   :77                     
                                                   
 > summary(himg3, digits = 5)
-     count             countw             UAA            weight1       
+     count             countw             UAA           weight_UAA     
  Min.   : 10.000   Min.   : 10.000   Min.   : 110.0   Min.   : 10.000  
  1st Qu.: 20.000   1st Qu.: 20.000   1st Qu.: 465.0   1st Qu.: 20.000  
  Median : 20.000   Median : 20.000   Median : 780.0   Median : 20.000  
@@ -275,24 +315,24 @@ Key: <strat>
 > s5 = Sys.time()
 > ## IGNORE_RDIFF_BEGIN
 > s5-s4
-Time difference of 4.331437 secs
+Time difference of 4.60932 secs
 > s4-s3
-Time difference of 8.751766 secs
+Time difference of 11.78774 secs
 > s3-s2
-Time difference of 8.781547 secs
+Time difference of 13.63908 secs
 > s2-s1
-Time difference of 5.715916 secs
+Time difference of 6.87759 secs
 > 
 > s5-s1
-Time difference of 27.58067 secs
+Time difference of 36.91374 secs
 > s4-s1
-Time difference of 23.24923 secs
+Time difference of 32.30442 secs
 > s3-s1
-Time difference of 14.49746 secs
+Time difference of 20.51667 secs
 > s2-s1
-Time difference of 5.715916 secs
+Time difference of 6.87759 secs
 > ## IGNORE_RDIFF_END
 > 
 > proc.time()
    user  system elapsed 
-  26.29    2.21   27.75 
+  34.23    1.89   37.14 
