@@ -76,7 +76,11 @@ MRGplot = function(himg, var, linecolor, option = "D", lwd = 0, lwdb = 1, border
                    transform = "identity", show.legend = TRUE) {
   #' @importFrom ggplot2 waiver geom_sf ggplot aes ggtitle theme_bw coord_sf
   if (missing(crs)) crs = st_crs(himg) else himg = st_transform(himg, crs = crs)
-  if (missing(var)) stop("A variable name is necessary for plotting")
+  if (missing(var)) {
+    stop("A variable name is necessary for plotting")
+  } else if (!rlang::quo_is_symbol(rlang::enquo(var))) {
+    stop("The variable name must be unqouted - in typical dplyr-style")
+  }
   if (!missing(borders)) {
     if (st_crs(himg) != st_crs(borders)) borders = st_transform(borders, crs = st_crs(himg))
     if (clip) himg = st_intersection(himg, borders)

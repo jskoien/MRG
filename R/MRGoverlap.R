@@ -141,7 +141,7 @@ MRGoverlap = function(himg, vars, himg2, action = "sum") {
     himg = himg[!himg$ID %in% idrem,]
     hadd = himg2[himg2$ID %in% idadd, names(himg2) %in% names(himg)]
     himg = rbind(himg[,names(himg) %in% names(himg2)], hadd)
-  } else {
+  } else if (!is.null(datjs)) {
   datjs = st_drop_geometry(datjs)
   hrem = NULL
   for (idub in 1:dim(datjs)[1]) {

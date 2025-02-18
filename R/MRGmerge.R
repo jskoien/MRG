@@ -52,6 +52,7 @@
 #' @examples
 #' \donttest{
 #' library(sf)
+#' library(dplyr)
 #' 
 #' # These are SYNTHETIC agricultural FSS data 
 #' data(ifs_dk) # Census data
@@ -93,9 +94,10 @@
 #' 
 #' himg21 = multiResGrid(ifl, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, postProcess = FALSE)
 #' hh3 = try(MRGmerge(himg1, himg21, himg3 = himg3))
-#' names(himg21)[which(names(himg21) %in% c("UAA", "weight_UAA"))] = c("UAA2", "weight_UAA2")
-#' # himg21 = himg21 %>% rename(UAA2 = UAA, weight_UAA2 = weight_UAA) 
+#' himg21 = himg21 %>% rename(UAA2 = UAA, weight_UAA2 = weight_UAA) 
 #' hh3 = MRGmerge(himg1, himg21, himg3 = himg3)
+#' 
+#' 
 #' summary(hh3[, c("UAA", "UAA2")])
 #' 
 #' himg4 = multiResGrid(ifl, vars = c("UAA", "ft", "UAAXK0000_ORG"), ifg = ifg, postProcess = FALSE)
@@ -126,7 +128,10 @@ MRGmerge = function(himg1, himg2, vars1, vars2, na.rm = TRUE, postProcess = FALS
   }
   
   h1 = himgs[[1]]
-  if (is.null(vars[[1]])) vars1 = attr(h1, "vars") else vars1 = vars[[1]]
+  if (is.null(vars[[1]])) {
+    vars1 = names(h1, "vars")
+    vars1 = vars1[!vars1 %in% c("ID", "res", "area", attr(h1, "sf_column"))] 
+  } else vars1 = vars[[1]]
 
   if (is.null(vars1)) vars1 = getVars(h1)  
   #' @importFrom dplyr rename
@@ -141,8 +146,11 @@ MRGmerge = function(himg1, himg2, vars1, vars2, na.rm = TRUE, postProcess = FALS
       cat("Object with repeated IDs, it was fixed here, but this could indicate overlapping grid cells, please check \n")
     
   }
+  sfcol = attr(h1, "sf_column")
   for (il in 2:length(himgs)){
     h2 = himgs[[il]]
+    sfcol2 = attr(h2, "sf_column")
+    if (sfcol != sfcol2) st_geometry(fam) = sfcol
     if (!"ID" %in% names(h2)) {
       h2 = h2 %>% mutate(ID = 1:dim(h2)[1])
     } else if (length(unique(h2$ID)) < length(h2$ID)) {
@@ -152,7 +160,10 @@ MRGmerge = function(himg1, himg2, vars1, vars2, na.rm = TRUE, postProcess = FALS
     
     if (!"count" %in% names(h2)) h2$count = NA
     if (!"countw" %in% names(h2)) h2$countw = NA
-    if (is.null(vars[[il]])) vars2 = attr(h2, "vars") else vars2 = vars[[il]]
+    if (is.null(vars[[il]])) {
+      vars2 = attr(h2, "vars") 
+      vars2 = vars2[!vars2 %in% c("ID", "res", "area", attr(h2, "sf_column"))] 
+    } else vars2 = vars[[il]]
     if (is.null(vars2)) vars2 = getVars(h2)  
     h2 = h2 %>% rename(!!paste0("count", il) := count, !!paste0("countw", il) := countw, ID2 = ID)
     vars2 = c(paste0("count", il), paste0("countw", il), vars2, names(h2)[grep("weight_", names(h2))])
