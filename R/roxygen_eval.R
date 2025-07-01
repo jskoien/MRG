@@ -58,7 +58,9 @@ MRGparam = function(par) {
                          see \\code{\\link[parallel]{makeCluster}} for more details.",
                splitlim = "@param splitlim For large dataset - split the data set in batches of more or less splitlim size",
                checkDominance = "@param checkDominance Logical - should the dominance rule be applied?",
-               checkReliability = "@param checkReliability Logical - should the prediction variance be checked, and used for the aggregation?
+              checkPpercent = "@param checkPpercent Logical - should the p-percent rule be applied?",
+              pPercent = "@param pPercent Which limit to use for the p-Percent rule?",
+              checkReliability = "@param checkReliability Logical - should the prediction variance be checked, and used for the aggregation?
                          This considerably increases computation time",
                pseudoreg = "@param pseudoreg A column with regions to be used to define pseudostrata if checkReliability is TRUE.
                             This is used for the cases when one or more strata only has a single record (and the weight is 

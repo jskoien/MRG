@@ -47,12 +47,6 @@ Varies by driver, may be a file name without extension; for database connection,
   If layer is missing, the basename of dsn is taken.}
 
 \item{...}{Additional parameters to read.csv if csv is a file name}
-
-\item{driver}{Character; name of driver to be used by \code{\link[sf]{st_write}}; 
- if missing and dsn is not a Database Connection, 
- a driver name is guessed from dsn.
- st_drivers() returns the drivers that are available with their properties. 
-links to full driver documentation are found at https://gdal.org/drivers/vector/index.html .}
 }
 \description{
 Function to create a gridded (usually multi-resolution grid) from a data.frame or 

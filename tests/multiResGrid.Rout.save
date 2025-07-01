@@ -19,7 +19,11 @@ Type 'q()' to quit R.
 > library(MRG)
 > # Neccessary to silence sf startup messages
 > suppressMessages(library(sf))
+Warning message:
+package 'sf' was built under R version 4.3.3 
 > library(giscoR)
+Warning message:
+package 'giscoR' was built under R version 4.3.3 
 > #'
 > # These are SYNTHETIC agricultural FSS data 
 > data(ifs_dk) # Census data
@@ -86,7 +90,7 @@ Type 'q()' to quit R.
 [1] "ires 2 5000 #himg-cells: 118 ; removed: 1192 ; added: 108 ; confidential: 10"
 [1] "ires 3 10000 #himg-cells: 40 ; removed: 111 ; added: 33 ; confidential: 6"
 [1] "ires 4 20000 #himg-cells: 18 ; removed: 33 ; added: 11 ; confidential: 6"
-[1] "ires 5 40000 #himg-cells: 9 ; removed: 14 ; added: 5 ; confidential: 3"
+[1] "ires 5 40000 #himg-cells: 13 ; removed: 8 ; added: 3 ; confidential: 6"
 > 
 > # Create joint multi-resolution grid of ft
 > himg5 = multiResGrid(ifl, vars = c("ft"), ifg = ifg, 
@@ -99,7 +103,7 @@ Type 'q()' to quit R.
 [1] "ires 2 5000 #himg-cells: 118 ; removed: 1192 ; added: 108 ; confidential: 10"
 [1] "ires 3 10000 #himg-cells: 40 ; removed: 111 ; added: 33 ; confidential: 6"
 [1] "ires 4 20000 #himg-cells: 18 ; removed: 33 ; added: 11 ; confidential: 6"
-[1] "ires 5 40000 #himg-cells: 9 ; removed: 14 ; added: 5 ; confidential: 3"
+[1] "ires 5 40000 #himg-cells: 13 ; removed: 8 ; added: 3 ; confidential: 6"
 > 
 > himg7 = MRGmerge(himg1, himg2, himg3 = himg5)
 Warning messages:
@@ -143,9 +147,9 @@ Key: <strat>
  Min.   : 10.0   Min.   : 10.0   Min.   : 5000   Min.   : 1.0  
  1st Qu.: 20.0   1st Qu.: 20.0   1st Qu.: 5000   1st Qu.:13.5  
  Median : 20.0   Median : 20.0   Median : 5000   Median :26.0  
- Mean   : 37.2   Mean   : 37.2   Mean   : 7549   Mean   :26.0  
+ Mean   : 37.4   Mean   : 37.4   Mean   : 7549   Mean   :26.0  
  3rd Qu.: 30.0   3rd Qu.: 30.0   3rd Qu.:10000   3rd Qu.:38.5  
- Max.   :490.0   Max.   :490.0   Max.   :40000   Max.   :51.0  
+ Max.   :500.0   Max.   :500.0   Max.   :40000   Max.   :51.0  
  NA's   :1       NA's   :1                                     
           geometry 
  POLYGON      :51  
@@ -158,11 +162,11 @@ Key: <strat>
 > summary(himg1, digits = 5)
      count           countw           UAA            weight_UAA   
  Min.   : 10.0   Min.   : 10.0   Min.   :  110.0   Min.   : 10.0  
- 1st Qu.: 20.0   1st Qu.: 20.0   1st Qu.:  445.0   1st Qu.: 20.0  
- Median : 20.0   Median : 20.0   Median :  875.0   Median : 20.0  
- Mean   : 37.2   Mean   : 37.2   Mean   : 1747.6   Mean   : 36.6  
- 3rd Qu.: 30.0   3rd Qu.: 30.0   3rd Qu.: 1760.0   3rd Qu.: 30.0  
- Max.   :490.0   Max.   :490.0   Max.   :17960.0   Max.   :490.0  
+ 1st Qu.: 20.0   1st Qu.: 20.0   1st Qu.:  425.0   1st Qu.: 20.0  
+ Median : 20.0   Median : 20.0   Median :  850.0   Median : 20.0  
+ Mean   : 37.4   Mean   : 37.4   Mean   : 1750.6   Mean   : 36.8  
+ 3rd Qu.: 30.0   3rd Qu.: 30.0   3rd Qu.: 1775.0   3rd Qu.: 30.0  
+ Max.   :500.0   Max.   :500.0   Max.   :18000.0   Max.   :500.0  
  NA's   :1       NA's   :1       NA's   :1         NA's   :1      
       res              ID                geometry 
  Min.   : 5000   Min.   : 1.0   POLYGON      :51  
@@ -175,65 +179,49 @@ Key: <strat>
 > # To avoid FAQ 7.31 problem in summary - mean(himg3$UAA) = 19182.5 is not consistently rounded to 19182 or 19183 
 > himg3$UAA = himg3$UAA + 0.001
 > summary(himg3, digits = 5)
-     count           countw           UAA        UAAXK0000_ORG   
- Min.   : 20.0   Min.   : 20.0   Min.   :  940   Min.   :   0.0  
- 1st Qu.:200.0   1st Qu.:200.0   1st Qu.:13705   1st Qu.:1485.0  
- Median :375.0   Median :375.0   Median :22750   Median :2255.0  
- Mean   :417.5   Mean   :417.5   Mean   :19183   Mean   :2132.5  
- 3rd Qu.:592.5   3rd Qu.:592.5   3rd Qu.:28228   3rd Qu.:2902.5  
- Max.   :900.0   Max.   :900.0   Max.   :30290   Max.   :4020.0  
- NA's   :5       NA's   :5       NA's   :5       NA's   :5       
-   weight_UAA    weight_UAAXK0000_ORG      res              ID   
- Min.   : 20.0   Min.   : 0.0         Min.   : 5000   Min.   :1  
- 1st Qu.:200.0   1st Qu.:22.5         1st Qu.:10000   1st Qu.:3  
- Median :375.0   Median :40.0         Median :40000   Median :5  
- Mean   :417.5   Mean   :42.5         Mean   :26667   Mean   :5  
- 3rd Qu.:592.5   3rd Qu.:60.0         3rd Qu.:40000   3rd Qu.:7  
- Max.   :900.0   Max.   :90.0         Max.   :40000   Max.   :9  
- NA's   :5       NA's   :5                                       
-          geometry
- POLYGON      :9  
- epsg:3035    :0  
- +proj=laea...:0  
-                  
-                  
-                  
-                  
+     count         countw         UAA        UAAXK0000_ORG    weight_UAA 
+ Min.   : 20   Min.   : 20   Min.   :  900   Min.   :   0   Min.   : 20  
+ 1st Qu.:200   1st Qu.:200   1st Qu.:13725   1st Qu.:1500   1st Qu.:200  
+ Median :380   Median :380   Median :23000   Median :2250   Median :380  
+ Mean   :420   Mean   :420   Mean   :19225   Mean   :2125   Mean   :420  
+ 3rd Qu.:600   3rd Qu.:600   3rd Qu.:28500   3rd Qu.:2875   3rd Qu.:600  
+ Max.   :900   Max.   :900   Max.   :30000   Max.   :4000   Max.   :900  
+ NA's   :5     NA's   :5     NA's   :5       NA's   :5      NA's   :5    
+ weight_UAAXK0000_ORG      res              ID             geometry
+ Min.   : 0.0         Min.   : 5000   Min.   :1   POLYGON      :9  
+ 1st Qu.:22.5         1st Qu.:10000   1st Qu.:3   epsg:3035    :0  
+ Median :40.0         Median :40000   Median :5   +proj=laea...:0  
+ Mean   :42.5         Mean   :26667   Mean   :5                    
+ 3rd Qu.:60.0         3rd Qu.:40000   3rd Qu.:7                    
+ Max.   :90.0         Max.   :40000   Max.   :9                    
+ NA's   :5                                                         
 > himg4$UAA = himg4$UAA + 0.001
 > summary(himg4, digits = 5)
-     count           countw           UAA        UAAXK0000_ORG   
- Min.   : 20.0   Min.   : 20.0   Min.   :  940   Min.   :   0.0  
- 1st Qu.:200.0   1st Qu.:200.0   1st Qu.:13705   1st Qu.:1485.0  
- Median :375.0   Median :375.0   Median :22750   Median :2255.0  
- Mean   :417.5   Mean   :417.5   Mean   :19183   Mean   :2132.5  
- 3rd Qu.:592.5   3rd Qu.:592.5   3rd Qu.:28228   3rd Qu.:2902.5  
- Max.   :900.0   Max.   :900.0   Max.   :30290   Max.   :4020.0  
- NA's   :5       NA's   :5       NA's   :5       NA's   :5       
-   weight_UAA    weight_UAAXK0000_ORG      res              ID   
- Min.   : 20.0   Min.   : 0.0         Min.   : 5000   Min.   :1  
- 1st Qu.:200.0   1st Qu.:22.5         1st Qu.:10000   1st Qu.:3  
- Median :375.0   Median :40.0         Median :40000   Median :5  
- Mean   :417.5   Mean   :42.5         Mean   :26667   Mean   :5  
- 3rd Qu.:592.5   3rd Qu.:60.0         3rd Qu.:40000   3rd Qu.:7  
- Max.   :900.0   Max.   :90.0         Max.   :40000   Max.   :9  
- NA's   :5       NA's   :5                                       
-          geometry
- POLYGON      :9  
- epsg:3035    :0  
- +proj=laea...:0  
-                  
-                  
-                  
-                  
+     count         countw         UAA        UAAXK0000_ORG    weight_UAA 
+ Min.   : 20   Min.   : 20   Min.   :  900   Min.   :   0   Min.   : 20  
+ 1st Qu.:190   1st Qu.:190   1st Qu.: 7000   1st Qu.:1100   1st Qu.:190  
+ Median :240   Median :240   Median : 9000   Median :1400   Median :240  
+ Mean   :322   Mean   :322   Mean   :14780   Mean   :1700   Mean   :322  
+ 3rd Qu.:260   3rd Qu.:260   3rd Qu.:27000   3rd Qu.:2000   3rd Qu.:260  
+ Max.   :900   Max.   :900   Max.   :30000   Max.   :4000   Max.   :900  
+ NA's   :8     NA's   :8     NA's   :8       NA's   :8      NA's   :8    
+ weight_UAAXK0000_ORG      res              ID              geometry 
+ Min.   : 0           Min.   : 1000   Min.   : 1   POLYGON      :13  
+ 1st Qu.:20           1st Qu.:10000   1st Qu.: 4   epsg:3035    : 0  
+ Median :20           Median :20000   Median : 7   +proj=laea...: 0  
+ Mean   :30           Mean   :20077   Mean   : 7                     
+ 3rd Qu.:20           3rd Qu.:20000   3rd Qu.:10                     
+ Max.   :90           Max.   :40000   Max.   :13                     
+ NA's   :8                                                           
 > summary(himg5, digits = 5)
-     count             countw             UAA            weight_UAA     
- Min.   : 10.000   Min.   : 10.000   Min.   :  110.0   Min.   : 10.000  
- 1st Qu.: 15.000   1st Qu.: 20.000   1st Qu.:  400.0   1st Qu.: 20.000  
- Median : 20.000   Median : 20.000   Median :  830.0   Median : 20.000  
- Mean   : 32.766   Mean   : 39.787   Mean   : 1857.9   Mean   : 39.787  
- 3rd Qu.: 20.000   3rd Qu.: 30.000   3rd Qu.: 1660.0   3rd Qu.: 30.000  
- Max.   :420.000   Max.   :520.000   Max.   :18160.0   Max.   :520.000  
- NA's   :1         NA's   :1         NA's   :1         NA's   :1        
+     count            countw             UAA            weight_UAA     
+ Min.   : 10.00   Min.   : 10.000   Min.   :  110.0   Min.   : 10.000  
+ 1st Qu.: 15.00   1st Qu.: 20.000   1st Qu.:  400.0   1st Qu.: 20.000  
+ Median : 20.00   Median : 20.000   Median :  800.0   Median : 20.000  
+ Mean   : 32.34   Mean   : 39.362   Mean   : 1851.9   Mean   : 39.362  
+ 3rd Qu.: 20.00   3rd Qu.: 30.000   3rd Qu.: 1650.0   3rd Qu.: 30.000  
+ Max.   :400.00   Max.   :500.000   Max.   :18000.0   Max.   :500.000  
+ NA's   :1        NA's   :1         NA's   :1         NA's   :1        
       res                ID                 geometry 
  Min.   : 5000.0   Min.   : 1.00   POLYGON      :48  
  1st Qu.: 5000.0   1st Qu.:12.75   epsg:3035    : 0  
@@ -315,24 +303,24 @@ Key: <strat>
 > s5 = Sys.time()
 > ## IGNORE_RDIFF_BEGIN
 > s5-s4
-Time difference of 4.60932 secs
+Time difference of 4.573779 secs
 > s4-s3
-Time difference of 11.78774 secs
+Time difference of 8.967661 secs
 > s3-s2
-Time difference of 13.63908 secs
+Time difference of 12.57585 secs
 > s2-s1
-Time difference of 6.87759 secs
+Time difference of 6.354798 secs
 > 
 > s5-s1
-Time difference of 36.91374 secs
+Time difference of 32.47208 secs
 > s4-s1
-Time difference of 32.30442 secs
+Time difference of 27.89831 secs
 > s3-s1
-Time difference of 20.51667 secs
+Time difference of 18.93064 secs
 > s2-s1
-Time difference of 6.87759 secs
+Time difference of 6.354798 secs
 > ## IGNORE_RDIFF_END
 > 
 > proc.time()
    user  system elapsed 
-  34.23    1.89   37.14 
+  31.00    1.95   32.64 

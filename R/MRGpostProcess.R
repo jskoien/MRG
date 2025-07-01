@@ -35,36 +35,56 @@
 #' himg[himg$confidential,]
 #'  }
 #' @export
-MRGpostProcess = function(himg, vars, remCols = TRUE, rounding = -1) {
+MRGpostProcess = function(himg, vars, remCols = TRUE, rounding = "varying") {
+  
+  round_signif<-function(xx, rounding){
+    if (is.numeric(rounding)) return(round(xx, rounding))
+    rs = function(x) {
+      if (is.na(x)) return(NA)
+      if (x<100){
+        ret = plyr::round_any(x,10)}
+      else{
+        y = 1
+        if (substr(as.integer(x), 1, 1) <= 2 ) y = 2 
+        ret = signif(x,y)
+      }
+      ret
+    }
+    unlist(lapply(xx, FUN = rs))
+  }
+  
   if (missing(vars) & !is.null(attr(himg, "vars"))) vars = attr(himg, "vars")
   if (missing(remCols) & !is.null(attr(himg, "remCols")) && !isFALSE(attr(himg, "remCols"))) remCols = attr(himg, "remCols")
   if (missing(rounding) & !is.null(attr(himg, "rounding"))  && !isFALSE(attr(himg, "rounding"))) rounding = attr(himg, "rounding")
   if ("confidential" %in% names(himg)) himg[himg$confidential, c("count", "countw")] = NA
   if (!isFALSE(rounding) & !is.null(rounding)) {
-    if ("count" %in% names(himg)) himg[["count"]] = round(himg[["count"]], rounding)
-    if ("countw" %in% names(himg)) himg[["countw"]] = round(himg[["countw"]], rounding)
-    if (!missing(vars)) {
+    if ("count" %in% names(himg)) himg[["count"]] = round_signif(himg[["count"]], rounding)
+    if ("countw" %in% names(himg)) himg[["countw"]] = round_signif(himg[["countw"]], rounding)
+  }
+  if (!missing(vars)) {
     for (ivar in 1:length(vars)) {
       var = vars[ivar]
       if ("confidential" %in% names(himg)) {
         himg[[var]][himg$confidential] = NA
         himg[[paste0("weight_", vars[ivar])]][himg$confidential] = NA
       }
-      himg[[var]] = round(himg[[var]], rounding)
-      if (paste0("weight_", vars[ivar]) %in% names(himg)) himg[[paste0("weight_", vars[ivar])]] = 
-        round(himg[[paste0("weight_", vars[ivar])]], rounding)
+      if (!isFALSE(rounding) & !is.null(rounding)) {
+        himg[[var]] = round_signif(himg[[var]], rounding)
+        if (paste0("weight_", vars[ivar]) %in% names(himg)) himg[[paste0("weight_", vars[ivar])]] = 
+            round_signif(himg[[paste0("weight_", vars[ivar])]], rounding)
+      }
     }
   }
-  }
+  
   #' @importFrom tidyselect matches
-  matchrem = c("small", "reliability", "dom", "freq", "idcount", "idfail", "vres", "idRem", "confidential", "ufun" )
+  matchrem = c("small", "reliability", "dom", "pPerc", "freq", "idcount", "idfail", "vres", "idRem", "confidential", "ufun" )
   if (!missing(vars) && length(vars) > 0) { 
     mm = unlist(lapply(1:length(matchrem), FUN = function(x) {ii = grep(matchrem[x], vars); if (length(ii) > 0) x else NULL}))
   } else mm = NULL
   if (length(mm) > 0) matchrem = matchrem[-mm]  
   matchrem = paste(matchrem, collapse = "|")
-  matchrem = "small|reliability|idcount|idfail|vres|idRem|confidential|ufun|dom|freq|singlimg"
+  matchrem = "small|reliability|idcount|idfail|vres|idRem|confidential|ufun|dom|freq|singlimg|pPerc"
   if (remCols) himg = himg %>% select(!matches(matchrem))
   if (!missing(vars)) attr(himg, "vars") = vars
-himg
+  himg
 }

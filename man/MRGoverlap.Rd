@@ -118,7 +118,8 @@ himgd2
 # it is difficult to reprocess just the border grid cells, so 
 # we make a new complete grid
 
-himg1 =  multiResGrid(ifl, vars = "UAA", ifg = ifg[ifg$NUTS2 \%in\% c("DK03", "DK04", "DK05"),], suppresslim = 0.02)
+himg1 =  multiResGrid(ifl, vars = "UAA", ifg = ifg[ifg$NUTS2 \%in\% c("DK03", "DK04", "DK05"),],
+                      suppresslim = 0.02)
 himgnew2 = MRGoverlap(himg, himg2 = himg1, action = "replace")
 himgd12 = MRGoverlap(himgnew2, action = "none")
 himgd12

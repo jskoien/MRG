@@ -71,6 +71,7 @@ from the microdata through a joint gridding process.
 \examples{
 \donttest{
 library(sf)
+library(dplyr)
 
 # These are SYNTHETIC agricultural FSS data 
 data(ifs_dk) # Census data
@@ -112,9 +113,10 @@ summary(hh1$UAA-hh11$UAA)
 
 himg21 = multiResGrid(ifl, vars = c("UAA", "UAAXK0000_ORG"), ifg = ifg, postProcess = FALSE)
 hh3 = try(MRGmerge(himg1, himg21, himg3 = himg3))
-names(himg21)[which(names(himg21) \%in\% c("UAA", "weight_UAA"))] = c("UAA2", "weight_UAA2")
-# himg21 = himg21 \%>\% rename(UAA2 = UAA, weight_UAA2 = weight_UAA) 
+himg21 = himg21 \%>\% rename(UAA2 = UAA, weight_UAA2 = weight_UAA) 
 hh3 = MRGmerge(himg1, himg21, himg3 = himg3)
+
+
 summary(hh3[, c("UAA", "UAA2")])
 
 himg4 = multiResGrid(ifl, vars = c("UAA", "ft", "UAAXK0000_ORG"), ifg = ifg, postProcess = FALSE)

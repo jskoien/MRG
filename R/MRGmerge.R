@@ -129,7 +129,7 @@ MRGmerge = function(himg1, himg2, vars1, vars2, na.rm = TRUE, postProcess = FALS
   
   h1 = himgs[[1]]
   if (is.null(vars[[1]])) {
-    vars1 = names(h1, "vars")
+    vars1 = attr(h1, "vars")
     vars1 = vars1[!vars1 %in% c("ID", "res", "area", attr(h1, "sf_column"))] 
   } else vars1 = vars[[1]]
 
@@ -150,6 +150,7 @@ MRGmerge = function(himg1, himg2, vars1, vars2, na.rm = TRUE, postProcess = FALS
   for (il in 2:length(himgs)){
     h2 = himgs[[il]]
     sfcol2 = attr(h2, "sf_column")
+    #' @importFrom sf st_geometry
     if (sfcol != sfcol2) st_geometry(fam) = sfcol
     if (!"ID" %in% names(h2)) {
       h2 = h2 %>% mutate(ID = 1:dim(h2)[1])

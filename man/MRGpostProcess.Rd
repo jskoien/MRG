@@ -4,7 +4,7 @@
 \alias{MRGpostProcess}
 \title{Make some final adjustments to the multiresolution grids}
 \usage{
-MRGpostProcess(himg, vars, remCols = TRUE, rounding = -1)
+MRGpostProcess(himg, vars, remCols = TRUE, rounding = "varying")
 }
 \arguments{
 \item{himg}{The grid resulting from a call to multiResGrid}

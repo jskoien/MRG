@@ -5,11 +5,12 @@
 #' be anonymized for disclosure control reasons. The function can also be used
 #' to create a grid of new variables, using an existing multi-resolution grid 
 #' as template.
-#'
 #' The possible restrictions that will lead to aggregation of a grid cell are:
 #' \enumerate{
 #'  \item{ Frequency rule (Aggregate to reach a minimum number of counts)}
 #'  \item{ Dominance rule (Aggregate because of dominance by one or more units)}
+#'  \item{ p-percent rule (Aggregate because the second largest producer could identify the production
+#'         of the largest producer with less than p percent uncertainty. )}
 #'  \item{ Reliability rule (Aggregate because the uncertainty is too high)}
 #'  \item{ User defined rule (Aggregate because a grid cell does not respect a user defined criteria)}
 #' }
@@ -30,6 +31,8 @@
 #' @eval MRGparam("outfile")
 #' @eval MRGparam("checkDominance")
 #' @eval MRGparam("checkReliability")
+#' @eval MRGparam("checkPpercent")
+#' @eval MRGparam("pPercent")
 #' @eval MRGparam("pseudoreg")
 #' @eval MRGparam("userfun")
 #' @eval MRGparam("strat")
@@ -68,10 +71,19 @@
 #'        will not work well.
 #'
 #'        The standard threshold rule for spatial data is at least 10 units (mincount). 
+#'        
 #'        The parameters nlarge and plim are used for determining the dominance treatment for the variable of interest,
 #'        with default values of \code{nlarge = 2} and \code{plim = 0.85}. 
 #'        If more than plim of the values of the grid cell (e.g. UAA, arable land, number of livestock)
 #'        is explained by 1-nlarge weighted holdings, the grid cell will not pass the confidentiality rule.
+#'        
+#'        It is also possible to apply the p-percent rule. This rule defines a minimum percentage for how close the 
+#'        second largest produces could be of estimating the production of the largest producer by subtracting
+#'        its own production from the total value of the cell. 
+#'        \deqn{Y_{cell}-Y_2-Y_1)/Y_1 < pPercent} 
+#'        where \eqn{Y_{cell}, Y_2, Y_1} represent the total production value of the cell,
+#'        the value of the second largest production, and the value of the largest production,
+#'        respectively.
 #'        
 #'        The concept of reliability is explained in details in section 4.6 in the integrated farm survey handbook for 2023:
 #'        https://wikis.ec.europa.eu/display/IFS/Integrated+Farm+Statistics+Manual+%7C+2023+edition
@@ -193,6 +205,12 @@
 #' himg1 = multiResGrid(ifl, vars = "UAA", ifg = ifg)
 #'   p1 = ggplot(himg1) + geom_sf(aes(fill = UAA))
 #'   p1
+#'
+#' # Create a multi-resolution grid of UAA, also based on the p-percent rule
+#' himg101 = multiResGrid(ifl, vars = "UAA", ifg = ifg, checkPpercent = TRUE)
+#'   p11 = ggplot(himg101) + geom_sf(aes(fill = UAA))
+#'   p11
+#'
 #' # Create multi-resolution grid of organic UAA
 #' himg2 = multiResGrid(ifl2, vars = "UAAXK0000_ORG", ifg = ifg)
 #' himg21 = multiResGrid(ifl2, vars = "UAAXK0000_ORG", ifg = ifg, postProcess = FALSE)
@@ -396,12 +414,12 @@ multiResGrid.sf <- function(MRGinp, ..., ifg, vars) {
 multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = "feature", mincount = 10, #minpos = 4, 
                               nlarge = 2,
                               plim = 0.85, verbose = FALSE, domEstat = TRUE, 
-                              outfile = NULL, checkDominance = TRUE,
+                              outfile = NULL, checkDominance = TRUE, checkPpercent = FALSE, pPercent = 20,
                               checkReliability = FALSE, userfun, strat = NULL, confrules = "individual", 
                               suppresslim = 0, sumsmall = FALSE, suppresslimSum = NULL,
                               reliabilitySplit = TRUE, pseudoreg = NULL,
                               plotIntermediate = FALSE,  addIntermediate = FALSE,
-                              postProcess = TRUE, rounding = -1, remCols = TRUE, ...) {
+                              postProcess = TRUE, rounding = "varying", remCols = TRUE, doTest = FALSE, ...) {
   #  To avoid R CMD check notes
   hsum = wsum = www = small = weight = data = himgid = dominance = . = NULL
   if (!missing(ifg) && !inherits(ifg, "sf")) stop("ifg is not an sf-object ")
@@ -481,7 +499,7 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
     himg = himg[,hcols]
   }
   himg = himg %>% mutate(confidential = FALSE, reliability = FALSE, small = FALSE,
-                         freq = FALSE, dom = FALSE, ufun = FALSE)
+                         freq = FALSE, dom = FALSE, pPerc = FALSE, ufun = FALSE)
   himgs = list()
   lohs = list()
   if (!missing(vars)) for (ivar in 1:length(vars)) himg[,paste0("vres", ivar)] = 0
@@ -495,7 +513,7 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
       lcols = which(names(limg)  %in% c("ID", "res", "count", "countw", "geometry", vvars, wweights))
       limg = limg[,lcols]
       limg = limg %>% mutate(confidential = FALSE, reliability = FALSE, small = FALSE,
-                             freq = FALSE, dom = FALSE, ufun = FALSE)
+                             freq = FALSE, dom = FALSE, pPerc = FALSE, ufun = FALSE)
       
       if (!missing(vars)) for (ivar in 1:length(vars)) limg[,paste0("vres", ivar)] = 0
     }    
@@ -519,11 +537,11 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
           #          sel = (loh[[paste0(vars[ivar], "_w", ivar, ".x")]]  <
           #                   suppresslim*loh[[paste0(vars[ivar], "_w", ivar, ".y")]]) & loh[[paste0("weight",ivar, ".x")]] < mincount
           sel = (loh[[paste0(vars[ivar], ".x")]]  <
-                   suppresslim*loh[[paste0(vars[ivar], ".y")]]) & loh[[paste0("weight_",vars[ivar], ".x")]] < mincount
+                   suppresslim*loh[[paste0(vars[ivar], ".y")]]) # & loh[[paste0("weight_",vars[ivar], ".x")]] < mincount
           #        } else sel = (loh[[paste0(vars[ivar], "_w", ivar, ".x")]]  <
           #                        suppresslim*loh[[paste0(vars[ivar], "_w", ivar, ".y")]]) & loh[["countw.x"]] < mincount
         } else sel = (loh[[paste0(vars[ivar], ".x")]]  <
-                        suppresslim*loh[[paste0(vars[ivar], ".y")]]) & loh[["countw.x"]] < mincount
+                        suppresslim*loh[[paste0(vars[ivar], ".y")]]) # & loh[["countw.x"]] < mincount
         if (sumsmall & sum(sel) == 0) {
           sshare = data.frame(Group.1 = 999999, x = 9999999)
         } else if (sumsmall) {
@@ -547,6 +565,11 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
     himgdat = st_drop_geometry(himg)
     ifgdat = st_drop_geometry(ifgl)
     
+    if (doTest) {
+      himg = confid(himg, ifgdat, vars, countFeatureOrTotal, mincount, nlarge, plim, domEstat, 
+                    checkDominance, checkPpercent,checkReliability, reliabilitySplit, pPercent, userfun, verbose, ...)
+    } else {
+    
     if (tolower(countFeatureOrTotal) == "feature" & !missing(vars)) {
       ww = himgdat[,names(himgdat) %in% paste0("weight_", vars), drop = FALSE]
       ww = apply(ww, MARGIN = 1, FUN = function(x) if (sum(x > 0))  min(x[x>0]) else 0)
@@ -557,14 +580,16 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
     ehimgid = ufres = NULL
     for (ivar in 1:len) {
       ifgdatl = NULL
-      if (checkDominance & !missing(vars)) {
-        if (verbose) cat("Checking dominance \n")
+      if ((checkDominance | checkPpercent) & !missing(vars)) {
         ifgdatl <- ifgdat[,c("himgid", paste0("gridvar", ivar), paste0("weight",ivar))] 
         names(ifgdatl) = c("himgid", "gridvar", "weight")
         ifgdatl$ehimgid = ifgdatl$himgid
         ifgdatl = ifgdatl[order(ifgdatl$ehimgid),]
-        #' @importFrom tidyr unnest nest 
-        #' @importFrom purrr map 
+      }
+      #' @importFrom tidyr unnest nest 
+      #' @importFrom purrr map 
+      if (checkDominance & !missing(vars)) {
+        if (verbose) cat("Checking dominance \n")
         dom = ifgdatl %>% filter(weight != 0)  %>%
           group_by(ehimgid) %>%  nest() %>%
           mutate(dominance = map(data, ~dominanceRule(., nlarge = nlarge, plim = plim, 
@@ -574,6 +599,17 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
         domid = which(dom)
         if (length(domid) > 0) himg$dom[domid] = TRUE
       } 
+      if (checkPpercent & !missing(vars)) {
+        if (verbose) cat("Checking p-percent rule \n")
+        pPercentC = ifgdatl %>% filter(weight != 0)  %>%
+          group_by(ehimgid) %>%  nest() %>%
+          mutate(pPercentC = map(data, ~pPercentRule(., pPercent = pPercent))) %>%
+          unnest(pPercentC) %>% ungroup %>% select(pPercentC) %>% pull 
+        
+        pPerid = which(pPercentC)
+        if (length(pPerid) > 0) himg$pPerc[pPerid] = TRUE
+        
+      }
       if (!missing(userfun) && is.function(userfun)) {
         if (verbose) cat("Checking userfun \n")
         if (is.null(ifgdatl)) ifgdatl <- ifgdat[,c("himgid", paste0("gridvar", ivar), 
@@ -623,11 +659,12 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
           himg[,paste0("vres",ivar)] = vestres
         }
       }
-      nonvalids = suppressWarnings(which(apply(st_drop_geometry(himg[, grep("vres", names(himg))]), 1, max, na.rm = TRUE) > 0.35))
+    }
+    nonvalids = suppressWarnings(which(apply(st_drop_geometry(himg[, grep("vres", names(himg))]), 1, max, na.rm = TRUE) > 0.35))
       himg$reliability[nonvalids] = TRUE
     }
     
-    himg$confidential = rowSums(st_drop_geometry(himg[,c("freq", "dom", "ufun", "reliability")])) > 0
+    himg$confidential = rowSums(st_drop_geometry(himg[,c("freq", "dom", "pPerc", "ufun", "reliability")])) > 0
     if (verbose) cat("Finished checks, updating multi-resoluion grid \n")
     
     if (ires <= length(ress)) {
@@ -706,144 +743,3 @@ multiResGrid.list <- function(MRGinp, ifg, vars, weights, countFeatureOrTotal = 
 
 
 
-
-
-
-mrg_varestim <- function(x, var, strat, PSU, weight, split, verbose, pseudoreg, nhimg){
-  t0 = proc.time()[3]
-  ID = n = hld = w_sum = wdiff = NULL
-  nx = dim(x)[1]
-  himgids = unique(x$himgid)
-  if (inherits(x, "sf")) x = st_drop_geometry(x)
-  if (!missing(PSU)) x$ID = x[[PSU]]  
-  icor = 0
-  if (missing(strat) || is.null(strat)) {
-    x$strat = 1
-  } else {
-    if (!strat %in% names(x)) stop(paste(strat, "is missing from from the data.frame"))
-    x$strat = x[[strat]]  
-  }
-  
-  # Check if any grid cells only have unit value weights
-  tt = st_drop_geometry(x) %>% group_by(himgid) %>% 
-    summarise(wdiff = sum(abs(.data[[weight]] - 1), na.rm = T)) %>% filter(wdiff < 0.1)
-  if (dim(tt)[1] > 0) {
-    x = x[!(x$himgid %in% tt$himgid), ]
-  }
-  t1 = proc.time()[3]
-  if (verbose > 1) cat("Varestim - finished preprocessing - t= ", round(t1-t0,2), "secs \n")
-  if (dim(x)[1] == 0) {
-    out_var = data.frame(himgid = himgids, rse = 0)
-  } else {
-    if (split == 1) {
-      df = x
-      out_var = vardom(dataset = df, Y= var, H = "strat",
-                       PSU = "ID",
-                       w_final = weight, Dom = "himgid")$all_result
-      t21 = proc.time()[3]
-      if (verbose > 1) cat("varestim - finished single split vardom estimation in ", round(t21-t1, 2), "secs \n")
-    } else {
-      himgid <- unique(x$himgid)    
-      #' @importFrom dplyr left_join mutate ungroup group_by distinct case_when n
-      #' @importFrom sjmisc split_var 
-      df_cl <- left_join(x, data.frame(himgid = himgid, cluster = split_var(himgid, n = split)), by = "himgid")
-      out_var <- NULL
-      t20 = proc.time()[3]
-      if (verbose > 1) cat("varestim - will split reliability calcs in ", split, "cases\n")
-      for (isp in 1:split){
-        t21 = proc.time()[3]
-        df = x[which(df_cl$cluster == isp),]
-        if (verbose) print(paste("reliabilitySplit: ", isp, 
-                                 "- Number of records: ", paste(dim(df)[1], 
-                                                                " - Number of unique IDs: ", length(unique(df$himgid)))))
-        
-        icor = icor + 1
-        t <- df %>% group_by(strat) %>% 
-          summarise(hld=n(), w_sum = sum(.data[[weight]], na.rm = T)) %>% 
-          filter(hld == 1 & w_sum > 1) %>% ungroup
-        if (!is.null(pseudoreg)) pcor = as.numeric(as.factor(df[[pseudoreg]])) else pcor = 0
-        if (dim(t)[1] > 0){
-          h_st <- t %>% distinct(strat) %>% pull()
-          df <- df %>% mutate(strat = case_when(strat %in% c(h_st)~(99999-pcor),
-                                                T ~ strat))}
-        #' @importFrom vardpoor vardom
-        t22 = proc.time()[3]
-        if (verbose > 1) cat("varestim - ready to call vardom for split ", isp, "of", split, "time:", round(t22-t21,2), "secs\n")
-        est <- vardom(dataset = df, Y= var, H = "strat",
-                      PSU = "ID",
-                      w_final = weight, Dom = "himgid")
-        t23 = proc.time()[3]
-        if (verbose > 1) cat("varestim - ready to call vardom for split ", isp, "of", split, "time:", round(t23-t22,2), "secs\n")
-        out_var<-rbind(out_var, est$all_result)
-      }
-    }
-    if (verbose) cat("varestim - finished looping in totally ", round(proc.time()[3]-t1,2), "secs \n")
-    if (icor > 0) {
-      cat(icor, "of the subsets included strata with only one record. \n",
-          "You might want to check the strata or consider a lower value for reliabilitySplit.")
-    }
-    out_var$himgid = as.numeric(out_var$himgid)
-    if (dim(tt)[1] > 0) out_var = rbind(out_var[,c("himgid", "rse")], data.frame(himgid = tt$himgid, rse = 0))
-    out_var = out_var[order(out_var$himgid),]
-  }
-  if (!missing(nhimg) && nhimg != dim(out_var)[1]) stop("The dimension of out_var does not match the dimension of himg")
-  if (sum(duplicated(out_var$himgid)) > 0) stop("There are duplicated himgids in out_var")
-  if (verbose > 1) cat("Finished mrg_varestim")
-  out_var$rse
-}
-
-
-
-
-
-dominanceRule = function(ifglldat, nlarge, plim, domEstat = TRUE) {
-  #' @importFrom dplyr summarise
-  Y <- sum(ifglldat$gridvar*ifglldat$weight)
-  ifglldat <- ifglldat[order(ifglldat$gridvar, ifglldat$weight, decreasing = TRUE),]
-  if (domEstat) {
-    # Extrapolated aggregated value of the cell Y
-    # Need to loop to account for different nlarge values, even though nlarge=2 is the standard rule
-    dominance = FALSE
-    nlarge = min(dim(ifglldat)[1], nlarge)
-    for (nc in 1:nlarge){
-      #' @importFrom magrittr "%>%"
-      #' @importFrom dplyr slice select pull arrange ungroup
-      #' @importFrom rlang .data
-      # wmax= nc largest contributor
-      #      wmax<-ifglldat %>% slice(1:nc) %>% select(.data$weight) %>%  pull()
-      wmax<-ifglldat$weight[1:nc]
-      # This should only round the weights that are above 0.5, to avoid creation of zero weights
-      # This should avoid any issues due to low weights, such as
-      # wmax = c(0.1, 0.4, 0.7, 1.2, 1.4)
-      wmaxr<- ifelse(wmax > 0.5, round(wmax), wmax)
-      #      wmaxr<-wmax %>% ifelse(.data > 0.5, round(.data), .data)  #JON: Separated wmax from wmaxr, as only the second should be rounded
-      # xmax nc largest values of the variable
-      #      xmax<-ifglldat %>% slice(1:nc) %>% select(.data$gridvar) %>% pull()
-      xmax<-ifglldat$gridvar[1:nc] 
-      # sum of n largest contributor is <= nlarge and aggregated extrapolated value of n largest contributor is
-      # greater than 85% of the extrapolated aggregated value of that cell (Y)
-      if(sum(wmaxr)<=nlarge*1.01 && sum(wmax*xmax)>plim*Y){
-        # No need to continue the loop if dominance is already TRUE 
-        #       print(paste(ifglldat$ehimgid[1], Y, ifglldat$gridvar[1]))
-        return(dominance = TRUE)
-      } # JON: Not including "else dominance = FALSE" here, it is not necessary. 
-      #      Also, there might be a case where dominance = TRUE for nc = 1, but not for nc = 2
-    }
-  } else {
-    
-    weight = ifglldat$weight
-    dat = ifglldat$gridvar
-    wmax = 0
-    xmax = 0
-    for (ii in 1:length(dat)) {
-      lw = min(weight[ii], nlarge-wmax)
-      xmax = xmax + dat[ii]*lw
-      wmax = wmax + lw
-      if (wmax > 0.999*nlarge) break # just to avoid potential numerical issues (FAQ 7.31) from sumWeight >= nlarge
-    }
-    if(sum(wmax) * 0.999 <=nlarge && xmax > plim*Y$total){
-      dominance = TRUE
-    } else dominance = FALSE
-  }
-  dominance
-}

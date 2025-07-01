@@ -26,6 +26,8 @@ multiResGrid(MRGinp, ...)
   domEstat = TRUE,
   outfile = NULL,
   checkDominance = TRUE,
+  checkPpercent = FALSE,
+  pPercent = 20,
   checkReliability = FALSE,
   userfun,
   strat = NULL,
@@ -38,8 +40,9 @@ multiResGrid(MRGinp, ...)
   plotIntermediate = FALSE,
   addIntermediate = FALSE,
   postProcess = TRUE,
-  rounding = -1,
+  rounding = "varying",
   remCols = TRUE,
+  doTest = FALSE,
   ...
 )
 }
@@ -85,6 +88,10 @@ it be the first nlarge contributors*weight, where also fractions are considered 
 see \code{\link[parallel]{makeCluster}} for more details.}
 
 \item{checkDominance}{Logical - should the dominance rule be applied?}
+
+\item{checkPpercent}{Logical - should the p-percent rule be applied?}
+
+\item{pPercent}{Which limit to use for the p-Percent rule?}
 
 \item{checkReliability}{Logical - should the prediction variance be checked, and used for the aggregation?
 This considerably increases computation time}
@@ -161,16 +168,17 @@ regions with lower resolution of data, or where data needs to
 be anonymized for disclosure control reasons. The function can also be used
 to create a grid of new variables, using an existing multi-resolution grid 
 as template.
-}
-\details{
 The possible restrictions that will lead to aggregation of a grid cell are:
 \enumerate{
  \item{ Frequency rule (Aggregate to reach a minimum number of counts)}
  \item{ Dominance rule (Aggregate because of dominance by one or more units)}
+ \item{ p-percent rule (Aggregate because the second largest producer could identify the production
+        of the largest producer with less than p percent uncertainty. )}
  \item{ Reliability rule (Aggregate because the uncertainty is too high)}
  \item{ User defined rule (Aggregate because a grid cell does not respect a user defined criteria)}
 }
-
+}
+\details{
 This function will find the highest resolution data set that fulfills the 
        confidentiality rules and potential reliability rules for variable(s) of interest.
        Starting with the second highest resolution (5 km in the default settings),
@@ -194,10 +202,19 @@ This function will find the highest resolution data set that fulfills the
        will not work well.
 
        The standard threshold rule for spatial data is at least 10 units (mincount). 
+       
        The parameters nlarge and plim are used for determining the dominance treatment for the variable of interest,
        with default values of \code{nlarge = 2} and \code{plim = 0.85}. 
        If more than plim of the values of the grid cell (e.g. UAA, arable land, number of livestock)
        is explained by 1-nlarge weighted holdings, the grid cell will not pass the confidentiality rule.
+       
+       It is also possible to apply the p-percent rule. This rule defines a minimum percentage for how close the 
+       second largest produces could be of estimating the production of the largest producer by subtracting
+       its own production from the total value of the cell. 
+       \deqn{Y_{cell}-Y_2-Y_1)/Y_1 < pPercent} 
+       where \eqn{Y_{cell}, Y_2, Y_1} represent the total production value of the cell,
+       the value of the second largest production, and the value of the largest production,
+       respectively.
        
        The concept of reliability is explained in details in section 4.6 in the integrated farm survey handbook for 2023:
        https://wikis.ec.europa.eu/display/IFS/Integrated+Farm+Statistics+Manual+%7C+2023+edition
@@ -309,6 +326,12 @@ ggplot(himg0) + geom_sf(aes(fill = count))
 himg1 = multiResGrid(ifl, vars = "UAA", ifg = ifg)
   p1 = ggplot(himg1) + geom_sf(aes(fill = UAA))
   p1
+
+# Create a multi-resolution grid of UAA, also based on the p-percent rule
+himg101 = multiResGrid(ifl, vars = "UAA", ifg = ifg, checkPpercent = TRUE)
+  p11 = ggplot(himg101) + geom_sf(aes(fill = UAA))
+  p11
+
 # Create multi-resolution grid of organic UAA
 himg2 = multiResGrid(ifl2, vars = "UAAXK0000_ORG", ifg = ifg)
 himg21 = multiResGrid(ifl2, vars = "UAAXK0000_ORG", ifg = ifg, postProcess = FALSE)

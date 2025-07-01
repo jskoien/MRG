@@ -9,7 +9,6 @@
 #' @eval MRGparam("res")
 #' @eval MRGparam("coordscale")
 #' @eval MRGparam("dsn")
-#' @eval MRGparam("driver")
 #' @eval MRGparam("layer")
 #' @eval MRGparam("Estat")
 #' @eval MRGparam("cignore")
