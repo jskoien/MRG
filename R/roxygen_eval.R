@@ -118,7 +118,7 @@ MRGparam = function(par) {
               na.rm = "@param na.rm Should NA values be removed when summing values (essentially
                           treating them equal to zero) ",
               action = "@param action How to treat the values of overlapping grid cells. Possible values are:
-                             \\itemize{
+                             \\describe{
                              \\item{none}{return an \\code{sf} data.frame just with the overlapping grid cells}
                                \\item{sum}{sum the values of the overlapping grid cells - NAs are ignored unless both cells
                                are NA or one is NA and one is 0}

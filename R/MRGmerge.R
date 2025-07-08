@@ -47,7 +47,9 @@
 #' their values are likely to deviate from those that are computed directly
 #' from the microdata through a joint gridding process.
 #' 
-#' 
+#' @returns
+#' The function produces a new multiresolution grid, which is a
+#' \code{\link[sf]{sf}}-object with polygons.
 #' 
 #' @examples
 #' \donttest{
@@ -150,7 +152,7 @@ MRGmerge = function(himg1, himg2, vars1, vars2, na.rm = TRUE, postProcess = FALS
   for (il in 2:length(himgs)){
     h2 = himgs[[il]]
     sfcol2 = attr(h2, "sf_column")
-    #' @importFrom sf st_geometry
+    #' @importFrom sf st_geometry "st_geometry<-"
     if (sfcol != sfcol2) st_geometry(fam) = sfcol
     if (!"ID" %in% names(h2)) {
       h2 = h2 %>% mutate(ID = 1:dim(h2)[1])

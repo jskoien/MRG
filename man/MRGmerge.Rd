@@ -27,6 +27,10 @@ to check the confidential grid cells of the final map}
 \item{...}{Additional grids (himg3, himg4, ...) and variables (vars3, vars4, ...) to be merged. 
 Additional grids and variables must be named.}
 }
+\value{
+The function produces a new multiresolution grid, which is a
+\code{\link[sf]{sf}}-object with polygons.
+}
 \description{
 Merge two or more multi-resolution grids to a common resolution
 }

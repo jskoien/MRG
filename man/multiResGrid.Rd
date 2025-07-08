@@ -42,7 +42,6 @@ multiResGrid(MRGinp, ...)
   postProcess = TRUE,
   rounding = "varying",
   remCols = TRUE,
-  doTest = FALSE,
   ...
 )
 }
@@ -160,7 +159,9 @@ to be applied. It can also include some additional columns that indicates
 which of the different confidentiality rules that have been applied.
 
 Note that the function might (if \code{postProcess = FALSE})
-return values also for the confidential grid-cells.
+return values also for the confidential grid-cells. This is for the 
+case where the owner of the data wants to examine data that 
+will be suppressed during post-processing.
 }
 \description{
 Function that creates a multi-resolution grid with larger grid cells in

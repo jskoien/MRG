@@ -25,13 +25,17 @@
 #' for the grid itself and for the borders. The function uses the 
 #' \code{\link[viridis]{scale_color_viridis}} color scale.
 #'   
-#' The function will plot the object, and also return a valid ggplot-object that 
+#' 
+#' @returns
+#' The function will plot the object, and also return a valid 
+#' \code{\link[ggplot2]{ggplot}}-object that 
 #' can be further customized.
 #' 
 #' @examples
 #' 
 #' \donttest{
 #' library(sf)
+#' library(ggplot2)
 #' 
 #' if (require(giscoR)) {
 #'   useBorder = TRUE 

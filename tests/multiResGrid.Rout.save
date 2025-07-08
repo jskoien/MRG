@@ -19,11 +19,7 @@ Type 'q()' to quit R.
 > library(MRG)
 > # Neccessary to silence sf startup messages
 > suppressMessages(library(sf))
-Warning message:
-package 'sf' was built under R version 4.3.3 
 > library(giscoR)
-Warning message:
-package 'giscoR' was built under R version 4.3.3 
 > #'
 > # These are SYNTHETIC agricultural FSS data 
 > data(ifs_dk) # Census data

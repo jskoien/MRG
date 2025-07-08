@@ -173,7 +173,7 @@ partly match the variable names of \code{vars}}
 }
 \value{
 A list containing the necessary elements for further processing 
-with the \code{MRG}-package.
+with the \code{MRG}-package, referred to as being of class \code{MRG}.
 }
 \description{
 Create a single object containing all necessary objects for multiResGrid functions

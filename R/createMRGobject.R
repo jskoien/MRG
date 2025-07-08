@@ -43,7 +43,7 @@
 #' 
 #' 
 #' @returns A list containing the necessary elements for further processing 
-#' with the \code{MRG}-package.
+#' with the \code{MRG}-package, referred to as being of class \code{MRG}.
 #' 
 #' 
 #' 

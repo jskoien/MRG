@@ -31,7 +31,21 @@
 #' correct this. If the coordinates are actually correct, the 
 #' check can be overrun with \code{cignore = TRUE}
 #' 
-#' If plotting to file, the 
+#' If writing to file, it is necessary to add the dsn and potentially layer to the input.
+#' 
+#' @returns 
+#' The function produces a multiresolution grid, which is a
+#' \code{\link[sf]{sf}}-object with polygons.
+#' 
+#' @examples
+#' library(MRG)
+#' library(dplyr)
+#' library(tidyr)
+#' # C19.csv is an example file from Eurostat, including Utilized Agricultural Area 
+#' # (UAAXK0000) and organic UAA (UAAXK0000_ORG) 
+#' csvFile = system.file("ex/C19.csv", package="MRG")
+#' C19 = MRGfromDF(csvFile, crs = 3035)  %>% mutate(orgShare = UAAXK0000_ORG/UAAXK0000)
+#' MRGplot(C19, var = orgShare, xlim = c(2600000, 5800000), ylim = c(1500000, 5200000))
 #' 
 #' @export
 MRGfromDF = function(df, coords = c("x", "y"), coordscale, crs = NA, res = "res", Estat = TRUE, 

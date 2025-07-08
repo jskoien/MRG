@@ -122,7 +122,9 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
                 or look at the \\code{locAdj} argument of \\code{\\link{fssgeo}}") 
     }
 
-  if (verbose) print(paste("before rasterize - dim(ifg): ", dim(ifg)[1]))
+  if (verbose) print(paste("before rasterize - dim(ifg): ", dim(ifg)[1], "res:", res))
+  if (verbose) print(paste(names(ifg)))
+
   dnum = rasterize(ifg, field = "count", r0, fun="sum")
   if (verbose) print("rasterize(ifg, \"count\") succeeded")
   names(dnum) = "count"
@@ -130,6 +132,8 @@ gridData <-function (ifg, res = 1000, vars = NULL, weights = NULL,
     ifg = addweights(ifg, vars, weights)
     ifg$countw = ifg$count * st_drop_geometry(ifg[, paste0("weight_", vars[1])][[1]])
     if (verbose) print("rasterizing weighted count")
+    if (verbose) print(paste("before rasterize countw - dim(ifg): ", dim(ifg)[1]))
+    if (verbose) print(paste(names(ifg)))
     dnumw = rasterize(ifg, field = "countw", r0, fun = "sum")
     if (verbose) print("succeeded rasterizing weighted count")
     names(dnumw) = "countw"

@@ -1,7 +1,7 @@
 Package: MRG
 Type: Package
 Title: Create Non-Confidential Multi-Resolution Grids
-Version: 0.3.6
+Version: 0.3.10
 Authors@R: c(person(given = c("Jon", "Olav"),
                     family = "Skoien",
                     role = c("aut", "cre"),
@@ -12,7 +12,7 @@ Authors@R: c(person(given = c("Jon", "Olav"),
 Maintainer: Jon Olav Skoien <jon.skoien@gmail.com>
 Imports: magrittr, parallel, terra, sf, stars, plyr, dplyr, rlang, sjmisc, vardpoor, purrr, tidyr, tidyselect, methods, ggplot2, viridis, grDevices, utils 
 Suggests: patchwork, knitr, rmarkdown, giscoR, bookdown, units, ggforce, kableExtra
-Description: Functionality for creating gridded data, respecting the confidentiality rules, such as a minimum number of units and dominance by one or more units in the grid cell. The functions also include the possibility for contextual suppression of data.
+Description: The need for anonymization of individual survey responses often leads to many suppressed grid cells in a regular grid. Here we provide functionality for creating multi-resolution gridded data, respecting the confidentiality rules, such as a minimum number of units and dominance by one or more units for each  grid cell. The functions also include the possibility for contextual suppression of data. For more details see Skoien et al. (2025) <doi:10.48550/arXiv.2410.17601>.
 License: GPL(>=3)
 Encoding: UTF-8
 RoxygenNote: 7.3.2

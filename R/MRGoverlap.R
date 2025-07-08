@@ -43,10 +43,29 @@
 #' a very high number of grid cells (a few tens of thousands), this process can be 
 #' rather slow. In that case, it might be better to check parts of the grid separately.
 #' 
+#' @returns
+#' The function will return different objects, depending on "action". The returned object will
+#' for different values of "action" be:
+#' \describe{
+#'   \item{none}{An \code{\link[sf]{sf}} data.frame with the overlapping grid cells}
+#'   \item{sum}{A multi-resolution grid containing the sum the values of the overlapping grid cells.
+#'      NAs are ignored unless both cells are NA or one is NA and one is 0}
+#'   \item{sumna}{A multi-resolution grid containing the sum the values of the overlapping grid cells.
+#'        The sum will be NA if any of them is NA}
+#'   \item{avg}{A multi-resolution grid containing the average of the grid cells.
+#'      NAs are ignored unless both cells are NA or one is NA and one is 0}
+#'   \item{avgna}{A multi-resolution grid containing the average of the grid cells.
+#'        The average will be NA if any of them is NA}
+#'   \item{replace}{A multi-resolution grid containing, where the problematic grid cells
+#'        area replaced with grid cells from \code{himg2}}
+#' }
+
+#' 
 #' @examples
 #' \donttest{
 #' library(sf)
 #' library(giscoR)
+#' library(dplyr)
 #' 
 #' # These are SYNTHETIC agricultural FSS data 
 #' data(ifs_dk) # Census data

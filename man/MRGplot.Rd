@@ -61,6 +61,11 @@ If not specified, will use the CRS defined in the first sf layer of the plot.}
 
 \item{show.legend}{Logical; should the legend be shown or not.}
 }
+\value{
+The function will plot the object, and also return a valid 
+\code{\link[ggplot2]{ggplot}}-object that 
+can be further customized.
+}
 \description{
 Convenience function based on ggplot2 to plot multi-resolution grids with some
 default suggestions For full flexibility it is better to use 
@@ -70,14 +75,12 @@ ggplot2 directly.The function can also be used for ordinary grids
 The function is a wrapper around ggplot, possibly calling \code{geom_sf} twice,
 for the grid itself and for the borders. The function uses the 
 \code{\link[viridis]{scale_color_viridis}} color scale.
-  
-The function will plot the object, and also return a valid ggplot-object that 
-can be further customized.
 }
 \examples{
 
 \donttest{
 library(sf)
+library(ggplot2)
 
 if (require(giscoR)) {
   useBorder = TRUE 
